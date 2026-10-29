@@ -1,0 +1,125 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Architecture from '../components/Architecture.astro';
+// TBC = target figure that still needs engineering sign-off before launch.
+const specs = [
+  { block: 'Host', param: 'CPU', spec: 'Quad-core RV64GC, out-of-order', impact: 'Full ISA control, no microcode', tbc: false },
+  { block: 'Host', param: 'Toolchain', spec: 'LLVM 18 / GCC RISC-V', impact: 'Stock upstream compilers', tbc: false },
+  { block: 'NPU', param: 'Units', spec: '2 × independent NPU', impact: 'Parallel quantization experiments', tbc: false },
+  { block: 'NPU', param: 'Datatypes', spec: 'INT4, INT8, FP4, FP8, FP16', impact: 'Block minifloat research', tbc: true },
+  { block: 'Photonic', param: 'Tile size', spec: '64 × 64 GEMM', impact: 'Matrix multiply in the light domain', tbc: true },
+  { block: 'Photonic', param: 'Latency', spec: '< 4.2 ns per 64×64 tile', impact: 'Target, pre-silicon estimate', tbc: true },
+  { block: 'Photonic', param: 'Precision', spec: 'FP16, INT8, FP4/FP6', impact: 'Analog accuracy studies', tbc: true },
+  { block: 'Interconnect', param: 'Fabric', spec: 'CXL 3.1, PCIe Gen 6', impact: 'Host attach & memory pooling', tbc: true },
+  { block: 'Interconnect', param: 'Topology', spec: 'Mesh-on-chip (MoC)', impact: 'Unified memory latency < 12 ns', tbc: true },
+  { block: 'Software', param: 'Frameworks', spec: 'GCA SDK, PyTorch, JAX', impact: 'CUDA-style kernels', tbc: false },
+  { block: 'Verification', param: 'Simulators', spec: 'Verilator, Icarus, cocotb', impact: 'Runs on a laptop, free', tbc: false },
+  { block: 'Physical', param: 'FPGA targets', spec: 'AMD Kintex UltraScale+ (initial)', impact: 'Board-level validation', tbc: true },
+];
+---
+<Base title="Technology" description="Architecture, specifications and the open GCA SDK behind the Gridworkz platform.">
+  <PageHead eyebrow="Technology" title="Architectural benchmarks & interface compliance.">
+    The Gridworkz platform links open digital silicon with co-packaged analog optics, and an open software layer connects it all to the frameworks researchers already use.
+  </PageHead>
+
+  <section style="padding-top:0">
+    <div class="wrap"><Architecture /></div>
+  </section>
+
+  <section class="section-line" id="specs">
+    <div class="wrap">
+      <span class="eyebrow">Specifications</span>
+      <h2>Specs matrix</h2>
+      <div class="filter">
+        <input type="search" placeholder="Filter: photonic, CXL, FP4…" aria-label="Filter specifications" data-filter class="mono" />
+        <span class="mono legend"><span class="tbc">TARGET</span> pre-silicon target, subject to change</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="specs" data-specs>
+          <thead><tr><th>Block</th><th>Parameter</th><th>Specification</th><th>Impact</th></tr></thead>
+          <tbody>
+            {specs.map((s) => (
+              <tr>
+                <td class="mono blk">{s.block}</td>
+                <td>{s.param}</td>
+                <td class="mono">{s.spec}{s.tbc && <span class="tbc">TARGET</span>}</td>
+                <td>{s.impact}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p class="empty mono" hidden data-empty>No matching specs.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-line" id="sdk">
+    <div class="wrap sdk">
+      <div>
+        <span class="eyebrow">Software ecosystem</span>
+        <h2>GCA: Gridworkz Compute Architecture.</h2>
+        <p>An open, CUDA-style programming model with an LLVM-based compiler (<code>gcacc</code>), a bare-metal runtime and a BLAS library (<code>gblas</code>). Kernels run unchanged in Verilator simulation, on FPGA and on silicon.</p>
+        <ul class="feat">
+          <li><b>gcacc</b> LLVM backend for RV64 + NPU + photonic targets</li>
+          <li><b>gca-runtime</b> memory allocation, transfer and sync APIs</li>
+          <li><b>gca_photonic.h</b> explicit intrinsics for optical GEMM</li>
+          <li><b>PyTorch / JAX</b> frontends via the GCA device backend</li>
+        </ul>
+        <div class="btn-row"><a class="btn btn-primary" href="/docs/sdk/quickstart">SDK quickstart</a><a class="btn btn-ghost" href="/docs/sdk/photonic-compute">Photonic API</a></div>
+      </div>
+      <pre class="code"><code><span class="c">// Route a 64×64 GEMM onto the photonic chiplet</span>
+<span class="k">#include</span> &lt;gca_photonic.h&gt;
+
+<span class="t">gcaPhotonicMatrix_t</span> A, B, C;
+gcaPhotonicMalloc(&amp;A, 64, 64);
+gcaPhotonicMalloc(&amp;B, 64, 64);
+gcaPhotonicMalloc(&amp;C, 64, 64);
+
+gcaPhotonicMatMul(&amp;A, &amp;B, &amp;C,
+                  GCA_PHOTONIC_PRECISION_FP16);
+gcaPhotonicSync(&amp;C);
+
+<span class="c">$ gcacc matmul.gca -o matmul --target=sim_verilator</span></code></pre>
+    </div>
+  </section>
+</Base>
+<style>
+  .filter { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; margin: 24px 0 16px; }
+  .filter input {
+    flex: 1 1 260px; max-width: 380px; padding: 10px 14px; font-size: .88rem; color: var(--gw-white);
+    background: var(--gw-surface); border: 1px solid var(--gw-line-strong); border-radius: var(--gw-radius);
+  }
+  .filter input:focus { outline: none; border-color: var(--gw-teal); }
+  .legend { font-size: .72rem; }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--gw-line); border-radius: 10px; }
+  .specs { width: 100%; border-collapse: collapse; min-width: 680px; font-size: .92rem; }
+  .specs th, .specs td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--gw-line); }
+  .specs th { font: 500 .7rem/1 var(--gw-font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gw-steel); background: var(--gw-surface); }
+  .specs td { color: var(--gw-white); }
+  .specs td:last-child { color: var(--gw-steel); }
+  .specs tbody tr:hover { background: #0f1d1d; }
+  .blk { color: var(--gw-teal) !important; font-size: .8rem; }
+  .empty { padding: 18px; }
+  .sdk { display: grid; gap: 48px; grid-template-columns: 1fr; align-items: center; }
+  @media (min-width: 960px) { .sdk { grid-template-columns: 1fr 1fr; } }
+  .sdk > * { min-width: 0; }
+  .feat { padding: 0; list-style: none; display: grid; gap: 10px; }
+  .feat li { padding-left: 18px; position: relative; }
+  .feat li::before { content: '▸'; color: var(--gw-teal); position: absolute; left: 0; }
+  .feat b { font-family: var(--gw-font-mono); color: var(--gw-white); font-weight: 500; font-size: .9em; }
+  code { color: var(--gw-white); font-size: .9em; }
+  .code { margin: 0; padding: 24px; background: #05060a; border: 1px solid var(--gw-line-strong); border-radius: 10px; font-size: .82rem; line-height: 1.75; color: var(--gw-white); overflow-x: auto; }
+  .c { color: #5c6678; } .k { color: var(--gw-teal); } .t { color: #7aa2ff; }
+</style>
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-filter]');
+  const rows = document.querySelectorAll<HTMLTableRowElement>('[data-specs] tbody tr');
+  const empty = document.querySelector<HTMLElement>('[data-empty]');
+  input?.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    let shown = 0;
+    rows.forEach((r) => { const m = r.textContent!.toLowerCase().includes(q); r.hidden = !m; if (m) shown++; });
+    if (empty) empty.hidden = shown > 0;
+  });
+</script>

@@ -148,7 +148,8 @@ gridworkz-core/
 │   ├── include/            # gca.h, gca_photonic.h
 │   ├── lib/                # gblas math library
 │   └── examples/           # Sample kernels
-├── docs/                   # Architecture docs (published at gridworkz.com/docs)
+├── docs/                   # Docs in Markdown (published at gridworkz.com/docs)
+├── website/                # gridworkz.com (Astro + Starlight)
 └── Makefile
 ```
 
