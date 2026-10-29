@@ -13,7 +13,7 @@ npm run dev      # http://localhost:4321
 npm run build    # static output in dist/
 ```
 
-**Deploy:** Netlify picks up `netlify.toml` at the repo root automatically. On Vercel, set the project's Root Directory to `website` (settings in `website/vercel.json`) and Node.js to 24.x.
+**Deploy:** pushes to `main` deploy automatically to the web server via GitHub Actions. See [`deploy/README.md`](../deploy/README.md).
 
 ## Where things live
 
@@ -32,7 +32,7 @@ npm run build    # static output in dist/
 - [ ] Real founder bios and photos (`src/pages/company.astro`)
 - [ ] Grant datasheet PDF at `public/gridworkz-grant-datasheet.pdf`
 - [ ] Confirm grant eligibility wording (NSF / NSERC) on `/labs`
-- [ ] Wire the lab request form (Netlify Forms works as-is; on Vercel use Formspree or similar)
+- [ ] Wire the lab request form to a backend (e.g. Formspree) — the site is static, so the form has nowhere to post yet
 - [ ] Set up `labs@` and `careers@gridworkz.com` mailboxes
 - [ ] Enable Plausible (snippet commented in `src/layouts/Base.astro`)
 - [ ] Social share image (`og:image`)

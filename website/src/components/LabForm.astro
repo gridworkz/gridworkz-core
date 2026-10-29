@@ -1,9 +1,12 @@
 ---
-// Static form. Netlify picks up `data-netlify`; on Vercel, point `action` at Formspree or similar.
+import { site } from '../site';
+// With a form service configured, post to it. Otherwise fall back to email.
+const useService = Boolean(site.labFormEndpoint);
+const action = useService ? site.labFormEndpoint : `mailto:${site.contactEmail}?subject=${encodeURIComponent('Evaluation board request')}`;
 ---
-<form class="form card" name="lab-allocation" method="POST" data-netlify="true" netlify-honeypot="company_url" action="/labs/thanks">
-  <input type="hidden" name="form-name" value="lab-allocation" />
-  <p hidden><label>Leave blank <input name="company_url" /></label></p>
+<form class="form card" name="lab-allocation" method="POST" action={action} enctype={useService ? undefined : 'text/plain'}>
+  {useService && <input type="hidden" name="_next" value={`https://${site.domain}/labs/thanks`} />}
+  {useService && <p hidden><label>Leave blank <input name="_gotcha" tabindex="-1" autocomplete="off" /></label></p>}
   <div class="two">
     <label>Name<input name="name" required autocomplete="name" /></label>
     <label>Institutional email<input name="email" type="email" required autocomplete="email" /></label>

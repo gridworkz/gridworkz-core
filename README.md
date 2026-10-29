@@ -150,6 +150,7 @@ gridworkz-core/
 │   └── examples/           # Sample kernels
 ├── docs/                   # Docs in Markdown (published at gridworkz.com/docs)
 ├── website/                # gridworkz.com (Astro + Starlight)
+├── deploy/                 # Web server config and deploy guide
 └── Makefile
 ```
 
