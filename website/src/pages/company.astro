@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PageHead from '../components/PageHead.astro';
+import { site } from '../site';
 // TODO: replace with real founder bios and photos.
 const team = [
   { name: 'Founder Name', role: 'CEO & Co-founder', bio: 'Ex-[Company] silicon lead. 15 years shipping SoCs. PhD, [University].' },
@@ -41,7 +42,7 @@ const roles = [
       <ul class="roles">
         {roles.map((r) => (
           <li>
-            <a href={`mailto:careers@gridworkz.com?subject=${encodeURIComponent(r.title)}`}>
+            <a href={`mailto:${site.contactEmail}?subject=${encodeURIComponent(r.title)}`}>
               <span class="rt">{r.title}</span>
               <span class="mono meta">{r.team} · {r.loc}</span>
               <span class="arrow">→</span>
