@@ -6,7 +6,7 @@ export const site = {
   repo: 'https://github.com/gridworkz/gridworkz-core',
   repoSlug: 'gridworkz/gridworkz-core',
   version: 'v1.0.0-beta',
-  contactEmail: 'labs@gridworkz.com',
+  contactEmail: 'dave@gridworkz.com',
   // Show the live GitHub stats bar only once the repo is public and has traction.
   showRepoStats: false,
 };

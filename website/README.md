@@ -19,7 +19,7 @@ npm run build    # static output in dist/
 
 | Path | What |
 |---|---|
-| `src/site.ts` | Repo URL, version, contact email, feature flags |
+| `src/site.ts` | Repo URL, version, contact email (used site-wide), feature flags |
 | `src/styles/tokens.css` | Brand colours and fonts |
 | `src/pages/` | Home, Technology, Labs, Manifesto, Company |
 | `src/components/Architecture.astro` | Clickable block diagram + side panel |
@@ -33,7 +33,6 @@ npm run build    # static output in dist/
 - [ ] Grant datasheet PDF at `public/gridworkz-grant-datasheet.pdf`
 - [ ] Confirm grant eligibility wording (NSF / NSERC) on `/labs`
 - [ ] Wire the lab request form (Netlify Forms works as-is; on Vercel use Formspree or similar)
-- [ ] Set up `labs@` and `careers@gridworkz.com` mailboxes
 - [ ] Enable Plausible (snippet commented in `src/layouts/Base.astro`)
 - [ ] Social share image (`og:image`)
 - [ ] Turn on `showRepoStats` once the repo is public
