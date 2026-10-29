@@ -4,6 +4,7 @@
 // 2. Fallback: merge commits from the local git history (titles only).
 import { execSync } from 'node:child_process';
 import { site } from '../site';
+import { gh } from './github';
 
 export interface Shipped {
   number: number;
@@ -29,13 +30,7 @@ function summarize(body: string | null): string | undefined {
 }
 
 async function fromGitHub(): Promise<Shipped[]> {
-  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
-  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  const res = await fetch(
-    `https://api.github.com/repos/${site.repoSlug}/pulls?state=closed&base=main&per_page=100&sort=updated&direction=desc`,
-    { headers, signal: AbortSignal.timeout(10000) },
-  );
-  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  const res = await gh(`repos/${site.repoSlug}/pulls?state=closed&base=main&per_page=100&sort=updated&direction=desc`);
   const pulls = (await res.json()) as any[];
   return pulls
     .filter((p) => p.merged_at)

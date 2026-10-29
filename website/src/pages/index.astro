@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Terminal from '../components/Terminal.astro';
 import Architecture from '../components/Architecture.astro';
 import LabForm from '../components/LabForm.astro';
+import RepoStats from '../components/RepoStats.astro';
 import { site } from '../site';
 ---
 <Base>
@@ -28,6 +29,9 @@ import { site } from '../site';
       <Terminal />
     </div>
   </section>
+
+  <!-- Live GitHub stats (off until site.showRepoStats is true) -->
+  <RepoStats />
 
   <!-- Zero-cost pitch -->
   <section class="section-line">
