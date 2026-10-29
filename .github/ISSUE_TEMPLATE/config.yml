@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Request an evaluation board for your lab
+    url: https://gridworkz.com/labs
+    about: Academic hardware allocations are handled through the website.
+  - name: Documentation
+    url: https://gridworkz.com/docs
+    about: Architecture, register maps and SDK reference.
