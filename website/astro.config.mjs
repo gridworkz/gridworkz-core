@@ -16,9 +16,9 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kubeworkz' }],
       // Add new docs pages here (docs live in the repo-root docs/ folder).
       sidebar: [
-        { label: 'Start here', items: [{ label: 'Overview', slug: 'docs' }] },
-        { label: 'Hardware', items: ['docs/hardware/riscv64', 'docs/hardware/npu', 'docs/hardware/g100', 'docs/hardware/pinout'] },
-        { label: 'GCA SDK', items: ['docs/sdk/quickstart', 'docs/sdk/photonic-compute'] },
+        { label: 'Start here', items: [{ label: 'Overview', slug: 'docs' }, 'docs/quickstart'] },
+        { label: 'Hardware', items: ['docs/hardware/riscv64', 'docs/hardware/npu', 'docs/hardware/g100', 'docs/hardware/pta', 'docs/hardware/pinout'] },
+        { label: 'Software', items: ['docs/software/grxcp'] },
       ],
     }),
     sitemap(),

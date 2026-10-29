@@ -7,10 +7,10 @@ import { site } from '../site';
 const steps = [
   { n: '01', who: 'Dave', title: 'Spec', body: 'Every block starts as a written spec in the repo: architecture, interfaces, registers and constraints. The spec is the source of truth.' },
   { n: '02', who: 'Via', title: 'Build', body: 'AI agents built with Freebuff turn the spec into synthesizable SystemVerilog, testbenches and documentation.' },
-  { n: '03', who: 'Open tools', title: 'Verify', body: 'Verilator, cocotb and formal checks run against every change. Results are published with the change, pass or fail.' },
+  { n: '03', who: 'Open tools', title: 'Verify', body: 'Icarus Verilog testbenches, equivalence gates and SymbiYosys formal checks run against the change. Results are recorded with it, pass or fail.' },
   { n: '04', who: 'Dave', title: 'Sign off', body: 'Nothing merges without a human review. Dave reads the diff and the verification results, then signs off.' },
 ];
-const tools = ['Freebuff', 'Verilator', 'cocotb', 'OpenLane', 'LLVM', 'GitHub'];
+const tools = ['Freebuff', 'Icarus Verilog', 'Verilator', 'SymbiYosys', 'Vivado', 'LibreLane', 'GitHub'];
 ---
 <Base title="How we build" description="How Gridworkz designs chips: human-architected, AI-built with Freebuff, and verified in public with open-source tools.">
   <PageHead eyebrow="How we build" title="Human-architected. AI-built. Openly verified.">
@@ -30,7 +30,6 @@ const tools = ['Freebuff', 'Verilator', 'cocotb', 'OpenLane', 'LLVM', 'GitHub'];
           </li>
         ))}
       </ol>
-      <p class="note mono">The first RTL drops are in progress. This is the process every block goes through as it lands.</p>
     </div>
   </section>
 

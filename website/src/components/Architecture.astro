@@ -1,35 +1,41 @@
 ---
 import { site } from '../site';
+// Facts below come from the grx930 and grxgpu READMEs and design docs.
+// Keep them in step with those repos; status words matter more than adjectives.
 const blocks = [
   {
-    id: 'riscv', name: 'Quad-Core RISC-V64', sub: 'Host · RV64G', area: 'a',
-    body: 'Out-of-order, quad-core 64-bit RISC-V host. No secret microcode, no black-box enclaves. Add vector extensions, design your own instructions, compile with stock LLVM.',
-    src: { href: `${site.hw.soc}/tree/main/rv64imac/RTL`, path: 'grx930/rv64imac/RTL', text: 'RTL source' }, docs: '/docs/hardware/riscv64',
-    facts: [['ISA', 'RV64GC'], ['Cores', '4'], ['Language', 'SystemVerilog']],
+    id: 'riscv', name: 'Quad-Core RISC-V64', sub: 'GRX930 · RV64IMAC', area: 'a',
+    body: 'Four RV64IMAC cores, each a 5-stage in-order pipeline with its own I- and D-cache, atomics (AMO/LR/SC) and a shared 4-way L2 with coherence. No secret microcode: every module is SystemVerilog you can read and simulate.',
+    src: { href: `${site.hw.soc}/tree/main/rv64imac/RTL`, path: 'grx930/rv64imac/RTL', text: 'RTL source' },
+    links: [['Memory map', '/docs/hardware/riscv64'], ['Pinout', '/docs/hardware/pinout']],
+    facts: [['ISA', 'RV64IMAC'], ['Cores', '4 × 5-stage in-order'], ['FPGA', '~121 MHz, timing closed (Artix-7)']],
   },
   {
-    id: 'npu', name: 'Dual Edge NPU', sub: 'AI subsystem · bare-metal', area: 'b',
-    body: 'Two independent neural processing units mapped directly onto the memory grid. Every register is exposed for quantization, sparsity and activation research.',
-    src: { href: `${site.hw.soc}/tree/main/c930/rtl`, path: 'grx930/c930/rtl', text: 'RTL source' }, docs: '/docs/hardware/npu',
-    facts: [['Units', '2'], ['Datatypes', 'INT4/8 · FP4/8/16'], ['Language', 'SystemVerilog']],
+    id: 'npu', name: 'Dual NPU', sub: 'GRX930 · systolic GEMM', area: 'b',
+    body: 'Two 8×8 systolic-array GEMM engines on the SoC\'s AXI4 fabric, each with its own DMA, command queue and activation unit. Verified with an 18-case shape and precision sweep.',
+    src: { href: `${site.hw.soc}/tree/main/c930/rtl`, path: 'grx930/c930/rtl', text: 'RTL source' },
+    links: [['Register map', '/docs/hardware/npu'], ['Pinout', '/docs/hardware/pinout']],
+    facts: [['Units', '2 × 8×8 PEs'], ['Datatypes', 'INT4 · INT8 · INT16 · FP16 · BF16'], ['Interface', 'AXI4-Lite CSR + AXI4 DMA']],
   },
   {
-    id: 'g100', name: 'G100 GPU', sub: 'Graphics & compute cluster', area: 'c',
-    body: 'General-purpose compute cluster that schedules work onto the photonic chiplet and keeps a digital fallback path for every kernel.',
-    src: { href: `${site.hw.gpu}/tree/main/hw/rtl`, path: 'grxgpu/hw/rtl', text: 'RTL source' }, docs: '/docs/hardware/g100',
-    facts: [['Role', 'GEMM scheduler'], ['Interface', 'Unified memory bus']],
+    id: 'g100', name: 'G100 GPU', sub: 'GRXGPU · Vortex-based', area: 'c',
+    body: 'An open RISC-V GPU built on Vortex, with warp-group tensor cores (WGMMA), an asynchronous data-transfer accelerator (DXA), ray tracing and a graphics pipeline. Discovery configuration: one cluster of four cores, where tensor-core SGEMM passes against a host reference in simulation.',
+    src: { href: `${site.hw.gpu}/tree/main/hw/rtl`, path: 'grxgpu/hw/rtl', text: 'RTL source' },
+    links: [['G100 docs', '/docs/hardware/g100']],
+    facts: [['Tensor formats', 'fp32 · tf32 · fp16 · bf16 · fp8 · bf8 · int8'], ['Discovery config', '1 cluster × 4 cores, TCU + DXA'], ['Status', 'Simulation (SimX, RTL)']],
   },
   {
-    id: 'photonic', name: 'Photonic Tensor Chiplet', sub: 'Co-packaged · laser-driven GEMM', area: 'd',
-    body: 'Analog electro-optic array that performs matrix multiplication by routing light through silicon waveguides. Programmed from C++ via gca_photonic.h.',
-    src: { href: `${site.hw.gpu}/tree/main/docs/proposals`, path: 'grxgpu/docs/proposals', text: 'Design proposals' }, docs: '/docs/sdk/photonic-compute',
-    facts: [['Tile', '64 × 64'], ['Precision', 'FP16 · INT8 · FP4/6'], ['API', 'gcaPhotonicMatMul()']],
+    id: 'photonic', name: 'Photonic Tensor Accelerator', sub: 'PTA · in design', area: 'd',
+    body: 'A photonic GEMM tile planned as a chiplet beside the G100, reached over a die-to-die link. Today it exists as an error model: its output error is measured against a frozen MNIST test case before any hardware is built.',
+    src: { href: `${site.hw.gpu}/tree/main/docs/proposals`, path: 'grxgpu/docs/proposals', text: 'Design proposals' },
+    links: [['PTA docs', '/docs/hardware/pta']],
+    facts: [['Tile', '128 × 64'], ['Status', 'Error model, no hardware yet'], ['Software path', 'GRXCP grxBLAS (int8 GEMM)']],
   },
 ];
 ---
 <div class="arch" data-arch>
   <div class="diagram" role="group" aria-label="Gridworkz platform block diagram">
-    <div class="board-label mono">GRIDWORKZ DEV PLATFORM</div>
+    <div class="board-label mono">GRIDWORKZ PLATFORM</div>
     <div class="grid">
       {blocks.map((b, i) => (
         <button type="button" class={`blk blk-${b.area}`} data-id={b.id} aria-pressed={i === 0 ? 'true' : 'false'}>
@@ -37,11 +43,11 @@ const blocks = [
           <span class="nm">{b.name}</span>
         </button>
       ))}
-      <span class="bus bus-h mono" aria-hidden="true">◄ CXL bus ►</span>
+      <span class="bus bus-h mono" aria-hidden="true">◄ AXI4 ►</span>
       <span class="bus bus-v1" aria-hidden="true"></span>
       <span class="bus bus-v2" aria-hidden="true"></span>
     </div>
-    <p class="hint mono">Select a block to view source, registers and pinout →</p>
+    <p class="hint mono">Select a block to view its source, docs and status →</p>
   </div>
   <aside class="panel" aria-live="polite">
     {blocks.map((b, i) => (
@@ -52,8 +58,7 @@ const blocks = [
         <dl>{b.facts.map(([k, v]) => (<><dt>{k}</dt><dd class="mono">{v}</dd></>))}</dl>
         <div class="links">
           <a class="mono" href={b.src.href}>{b.src.text} ↗<small>{b.src.path}</small></a>
-          <a class="mono" href={b.docs}>Register map →</a>
-          <a class="mono" href="/docs/hardware/pinout">Pinout →</a>
+          {b.links.map(([label, href]) => <a class="mono" href={href}>{label} →</a>)}
         </div>
       </div>
     ))}

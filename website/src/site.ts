@@ -10,6 +10,7 @@ export const site = {
   hw: {
     soc: 'https://github.com/kubeworkz/grx930', // RISC-V SoC: CPU + NPUs
     gpu: 'https://github.com/kubeworkz/grxgpu', // G100 GPU + photonic tensor accelerator
+    sdk: 'https://github.com/kubeworkz/grxcp',  // GRXCP compute platform (CUDA-style SDK)
   },
   version: 'v1.0.0-beta',
   contactEmail: 'dave@gridworkz.com',
