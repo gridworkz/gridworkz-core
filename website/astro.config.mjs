@@ -8,6 +8,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Gridworkz Docs',
+      // The site has its own 404 page featuring Via (src/pages/404.astro).
+      disable404Route: true,
       logo: { src: './src/assets/logo-mark.svg', alt: 'Gridworkz' },
       favicon: '/favicon.svg',
       customCss: ['./src/styles/tokens.css', './src/styles/starlight.css'],
