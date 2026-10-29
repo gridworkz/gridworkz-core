@@ -13,7 +13,7 @@ export default defineConfig({
       logo: { src: './src/assets/logo-mark.svg', alt: 'Gridworkz' },
       favicon: '/favicon.svg',
       customCss: ['./src/styles/tokens.css', './src/styles/starlight.css'],
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/gridworkz/gridworkz-core' }],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kubeworkz' }],
       // Add new docs pages here (docs live in the repo-root docs/ folder).
       sidebar: [
         { label: 'Start here', items: [{ label: 'Overview', slug: 'docs' }] },

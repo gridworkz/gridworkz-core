@@ -17,10 +17,14 @@
 
 Gridworkz is a fully open-source hardware ecosystem built to break down proprietary vendor silos. We are building **the Linux of chip design**: giving university labs, AI researchers and systems architects bare-metal access to next-generation hardware.
 
-This repository will hold the complete synthesizable RTL and software toolchain for the Gridworkz development platform: a **64-bit quad-core RISC-V host, dual edge NPUs, and the G100 GPU with a co-packaged photonic tensor accelerator chiplet**.
+The Gridworkz development platform integrates a **64-bit quad-core RISC-V host, dual edge NPUs, and the G100 GPU with a co-packaged photonic tensor accelerator chiplet**.
 
 > [!NOTE]
-> **Status: early development.** The repository structure, contribution process and documentation are in place. RTL, simulation targets and the SDK are being published in stages. Watch or star the repo to follow along.
+> **The hardware lives under [github.com/kubeworkz](https://github.com/kubeworkz):**
+> - **[kubeworkz/grx930](https://github.com/kubeworkz/grx930):** GRX930 RISC-V SoC (4× RV64IMAC cores, dual NPUs, L2, AXI4 fabric), with simulation targets and an FPGA flow
+> - **[kubeworkz/grxgpu](https://github.com/kubeworkz/grxgpu):** G100 GPU and the photonic tensor accelerator (PTA)
+>
+> This repository holds the [gridworkz.com](https://gridworkz.com) website (`website/`) and its docs (`docs/`).
 
 ---
 

@@ -10,10 +10,10 @@ const split = [
   { who: 'Open tools', does: 'Do the checking: Verilator, cocotb and formal tools. Results are public, so nobody has to take the AI on trust.' },
 ];
 const contribute = [
-  { area: 'RTL design', detail: 'RISC-V extensions, NPU blocks, memory and interconnect', path: 'hw/rtl' },
-  { area: 'Verification', detail: 'Testbenches, cocotb suites, coverage', path: 'hw/sim' },
-  { area: 'Compiler & runtime', detail: 'GCA LLVM backend, runtime APIs, gblas', path: 'sdk' },
-  { area: 'Documentation', detail: 'Register maps, tutorials, API reference', path: 'docs' },
+  { area: 'RTL design', detail: 'RISC-V SoC and NPUs (grx930), G100 GPU (grxgpu)', href: site.githubOrg },
+  { area: 'Verification', detail: 'GRX930 testbenches and equivalence gates', href: `${site.hw.soc}/tree/main/c930/tb` },
+  { area: 'GPU software', detail: 'G100 kernel, runtime and drivers', href: `${site.hw.gpu}/tree/main/sw` },
+  { area: 'Documentation', detail: 'Register maps, tutorials, API reference', href: `${site.repo}/tree/main/docs` },
 ];
 ---
 <Base title="Company" description="Gridworkz is a fabless chip company with a team of one: founder Dave Cook and Via, the AI agents that build the chips.">
@@ -76,7 +76,7 @@ const contribute = [
       <ul class="roles">
         {contribute.map((c) => (
           <li>
-            <a href={`${site.repo}/tree/main/${c.path}`}>
+            <a href={c.href}>
               <span class="rt">{c.area}</span>
               <span class="mono meta">{c.detail}</span>
               <span class="arrow">→</span>

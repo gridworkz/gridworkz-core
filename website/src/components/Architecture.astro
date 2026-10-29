@@ -4,25 +4,25 @@ const blocks = [
   {
     id: 'riscv', name: 'Quad-Core RISC-V64', sub: 'Host · RV64G', area: 'a',
     body: 'Out-of-order, quad-core 64-bit RISC-V host. No secret microcode, no black-box enclaves. Add vector extensions, design your own instructions, compile with stock LLVM.',
-    rtl: 'hw/rtl/riscv64', docs: '/docs/hardware/riscv64',
+    src: { href: `${site.hw.soc}/tree/main/rv64imac/RTL`, path: 'grx930/rv64imac/RTL', text: 'RTL source' }, docs: '/docs/hardware/riscv64',
     facts: [['ISA', 'RV64GC'], ['Cores', '4'], ['Language', 'SystemVerilog']],
   },
   {
     id: 'npu', name: 'Dual Edge NPU', sub: 'AI subsystem · bare-metal', area: 'b',
     body: 'Two independent neural processing units mapped directly onto the memory grid. Every register is exposed for quantization, sparsity and activation research.',
-    rtl: 'hw/rtl/npu', docs: '/docs/hardware/npu',
+    src: { href: `${site.hw.soc}/tree/main/c930/rtl`, path: 'grx930/c930/rtl', text: 'RTL source' }, docs: '/docs/hardware/npu',
     facts: [['Units', '2'], ['Datatypes', 'INT4/8 · FP4/8/16'], ['Language', 'SystemVerilog']],
   },
   {
     id: 'g100', name: 'G100 GPU', sub: 'Graphics & compute cluster', area: 'c',
     body: 'General-purpose compute cluster that schedules work onto the photonic chiplet and keeps a digital fallback path for every kernel.',
-    rtl: 'hw/rtl/photonic_g100', docs: '/docs/hardware/g100',
+    src: { href: `${site.hw.gpu}/tree/main/hw/rtl`, path: 'grxgpu/hw/rtl', text: 'RTL source' }, docs: '/docs/hardware/g100',
     facts: [['Role', 'GEMM scheduler'], ['Interface', 'Unified memory bus']],
   },
   {
     id: 'photonic', name: 'Photonic Tensor Chiplet', sub: 'Co-packaged · laser-driven GEMM', area: 'd',
     body: 'Analog electro-optic array that performs matrix multiplication by routing light through silicon waveguides. Programmed from C++ via gca_photonic.h.',
-    rtl: 'hw/rtl/photonic_g100', docs: '/docs/sdk/photonic-compute',
+    src: { href: `${site.hw.gpu}/tree/main/docs/proposals`, path: 'grxgpu/docs/proposals', text: 'Design proposals' }, docs: '/docs/sdk/photonic-compute',
     facts: [['Tile', '64 × 64'], ['Precision', 'FP16 · INT8 · FP4/6'], ['API', 'gcaPhotonicMatMul()']],
   },
 ];
@@ -51,7 +51,7 @@ const blocks = [
         <p>{b.body}</p>
         <dl>{b.facts.map(([k, v]) => (<><dt>{k}</dt><dd class="mono">{v}</dd></>))}</dl>
         <div class="links">
-          <a class="mono" href={`${site.repo}/tree/main/${b.rtl}`}>RTL source ↗<small>{b.rtl}</small></a>
+          <a class="mono" href={b.src.href}>{b.src.text} ↗<small>{b.src.path}</small></a>
           <a class="mono" href={b.docs}>Register map →</a>
           <a class="mono" href="/docs/hardware/pinout">Pinout →</a>
         </div>
