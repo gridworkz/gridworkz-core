@@ -1,31 +1,27 @@
 ---
 import { site } from '../site';
 const commands = [
-  { c: '# 1. Clone the complete heterogeneous hardware stack', comment: true },
-  { c: `git clone ${site.repo}.git` },
-  { c: '# 2. Move into the simulation target', comment: true },
-  { c: 'cd gridworkz-core' },
-  { c: '# 3. Build and run the photonic matmul demo', comment: true },
-  { c: 'make sim TARGET=verilator WORKLOAD=photonic_matmul_64' },
+  { c: '# 1. Install the open-source simulator', comment: true },
+  { c: 'sudo apt install iverilog' },
+  { c: '# 2. Clone the GRX930 RISC-V SoC', comment: true },
+  { c: `git clone ${site.hw.soc}.git` },
+  { c: 'cd grx930/c930' },
+  { c: '# 3. Run the NPU GEMM regression (~1 min)', comment: true },
+  { c: 'make npu' },
 ];
 const copyText = commands.filter((l) => !l.comment).map((l) => l.c).join('\n');
-// Matches what `make sim` prints today. Swap in real simulator output once the RTL is published.
-const output = [
-  "[gridworkz] 'make sim' is not available yet.",
-  '[gridworkz] RTL + sim targets are being published in stages.',
-  '[gridworkz] Watch the repo for the first release.',
-];
+// Other targets: make npu_float, make soc (full SoC + firmware), make quad.
+const output: string[] = [];
 ---
 <div class="term" data-terminal>
   <div class="bar">
     <span class="dots"><i></i><i></i><i></i></span>
-    <span class="mono title">~/gridworkz — bash</span>
-    <span class="soon mono">Coming soon</span>
+    <span class="mono title">~/grx930 — bash</span>
     <button class="copy mono" type="button" data-copy={copyText}>Copy</button>
   </div>
   <pre class="body"><code>{commands.map((l) => (
     l.comment ? <span class="cm">{l.c}{'\n'}</span> : <span><span class="ps">$ </span>{l.c}{'\n'}</span>
-  ))}<span class="out" data-out>{output.map((o) => <span class="ol">{o}{'\n'}</span>)}</span></code></pre>
+  ))}{output.length > 0 && <span class="out" data-out>{output.map((o) => <span class="ol">{o}{'\n'}</span>)}</span>}</code></pre>
   <div class="wave" aria-label="Illustrative waveform">
     <span class="wave-cap mono">Illustrative waveform</span>
     <svg viewBox="0 0 600 120" preserveAspectRatio="none" role="img">
@@ -48,7 +44,6 @@ const output = [
   .dots { display: flex; gap: 6px; }
   .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--gw-line-strong); display: block; }
   .title { font-size: .75rem; flex: 1; }
-  .soon { font-size: .65rem; color: #ffb020; border: 1px solid #ffb02066; border-radius: 3px; padding: 2px 6px; letter-spacing: .05em; text-transform: uppercase; }
   .wave-cap { display: block; font-size: .62rem; color: #5c6678; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 2px; }
   .copy {
     font-size: .72rem; color: var(--gw-teal); background: transparent; border: 1px solid var(--gw-line-strong);

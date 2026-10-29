@@ -4,8 +4,13 @@ export const site = {
   domain: 'gridworkz.com',
   repo: 'https://github.com/gridworkz/gridworkz-core',
   repoSlug: 'gridworkz/gridworkz-core',
-  // GitHub button in the top navbar.
+  // Where the hardware lives. Hardware links (navbar, clone buttons, RTL
+  // source) point here; the website and docs stay in `repo` above.
   githubOrg: 'https://github.com/kubeworkz',
+  hw: {
+    soc: 'https://github.com/kubeworkz/grx930', // RISC-V SoC: CPU + NPUs
+    gpu: 'https://github.com/kubeworkz/grxgpu', // G100 GPU + photonic tensor accelerator
+  },
   version: 'v1.0.0-beta',
   contactEmail: 'dave@gridworkz.com',
   // Live GitHub stats bar under the homepage hero. Turn on once the numbers
