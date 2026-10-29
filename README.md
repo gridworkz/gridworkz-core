@@ -1,176 +1,52 @@
 <p align="center">
   <b>G R I D W O R K Z</b><br>
-  <i>Open Silicon. No NDAs. No Licensing Fees.</i>
+  <i>Open Silicon. No NDAs.</i>
 </p>
 
 <p align="center">
   <a href="https://gridworkz.com">Website</a> ·
-  <a href="#-architecture">Architecture</a> ·
-  <a href="#-quickstart">Quickstart</a> ·
-  <a href="#-the-gca-sdk">GCA SDK</a> ·
-  <a href="https://gridworkz.com/docs">Docs</a>
+  <a href="https://gridworkz.com/docs">Docs</a> ·
+  <a href="https://gridworkz.com/build-log">Build log</a> ·
+  <a href="https://github.com/kubeworkz">Hardware on GitHub</a>
 </p>
 
 ---
 
-# Gridworkz Heterogeneous Compute Platform
+# Gridworkz
 
-Gridworkz is a fully open-source hardware ecosystem built to break down proprietary vendor silos. We are building **the Linux of chip design**: giving university labs, AI researchers and systems architects bare-metal access to next-generation hardware.
+Gridworkz is a fabless chip company with a team of one: founder Dave Cook, working with AI agents, building open hardware for AI research. This repository holds the **[gridworkz.com](https://gridworkz.com) website and its documentation**.
 
-The Gridworkz development platform integrates a **64-bit quad-core RISC-V host, dual edge NPUs, and the G100 GPU with a co-packaged photonic tensor accelerator chiplet**.
+## Where the hardware lives
 
-> [!NOTE]
-> **The hardware lives under [github.com/kubeworkz](https://github.com/kubeworkz):**
-> - **[kubeworkz/grx930](https://github.com/kubeworkz/grx930):** GRX930 RISC-V SoC (4× RV64IMAC cores, dual NPUs, L2, AXI4 fabric), with simulation targets and an FPGA flow
-> - **[kubeworkz/grxgpu](https://github.com/kubeworkz/grxgpu):** G100 GPU and the photonic tensor accelerator (PTA)
->
-> This repository holds the [gridworkz.com](https://gridworkz.com) website (`website/`) and its docs (`docs/`).
+The hardware and software are in three repositories under **[github.com/kubeworkz](https://github.com/kubeworkz)**:
 
----
+| Repository | What it is | Status |
+|---|---|---|
+| **[grx930](https://github.com/kubeworkz/grx930)** | RISC-V SoC: 4 × RV64IMAC cores, 2 × 8×8 systolic NPUs (INT4 to BF16), coherent L2, AXI4 fabric | Verified in simulation; timing closed on Artix-7 at ~121 MHz; GF180MCU test chip in progress |
+| **[grxgpu](https://github.com/kubeworkz/grxgpu)** | G100: open RISC-V GPU on Vortex with tensor cores, DXA, ray tracing and graphics, plus the photonic tensor accelerator (PTA) design proposals | Simulation; discovery configuration under review |
+| **[grxcp](https://github.com/kubeworkz/grxcp)** | GRXCP: CUDA-style runtime, `grxcc` compiler, grxBLAS and tools for the G100 and GRX930 | In active development |
 
-## 🔬 Architecture
-
-```text
-+---------------------------------------------------------+
-|                 GRIDWORKZ DEV PLATFORM                  |
-|                                                         |
-|   +-------------------+         +-------------------+   |
-|   |   Quad-Core       |   CXL   |   Dual Edge NPU   |   |
-|   |   RISC-V64 Block  |<=======>|   Subsystem       |   |
-|   |   (Open Silicon)  |   Bus   |   (Bare-Metal)    |   |
-|   +-------------------+         +-------------------+   |
-|             ^                             ^             |
-|             +--------------+--------------+             |
-|                            |                            |
-|                            v                            |
-|   +-------------------------------------------------+   |
-|   |                    G100 GPU                     |   |
-|   |  +-------------------------------------------+  |   |
-|   |  |     PHOTONIC TENSOR ACCELERATOR CHIPLET   |  |   |
-|   |  |    (Laser-Driven Matrix Multiplication)   |  |   |
-|   |  +-------------------------------------------+  |   |
-|   +-------------------------------------------------+   |
-+---------------------------------------------------------+
-```
-
-### 1. Host compute (RISC-V64)
-- Quad-core, out-of-order 64-bit RISC-V (RV64GC).
-- No secret microcode, no black-box security enclaves. Built for OS research, custom vector extensions and bare-metal compilation work.
-
-### 2. Deep learning accelerators (dual NPUs)
-- Two independent neural processing units mapped onto the primary memory grid.
-- Designed for hardware-level research on quantization (INT4, FP4, block minifloats), sparse tensor indexing and custom activation functions.
-
-### 3. Electro-optic accelerator (G100 GPU + photonic tensor chiplet)
-- G100 compute cluster coupled to an analog photonic tensor array.
-- Performs matrix-matrix multiplication (GEMM) by routing laser light through silicon waveguides.
-
----
-
-## ⚡ Quickstart
-
-> [!IMPORTANT]
-> **Coming soon.** The simulation target below is not published yet. `make sim` currently prints a status message instead of running. The commands are shown so you can see what the workflow will look like.
-
-You will **not** need a proprietary EDA license. The whole platform is designed to build and simulate on a laptop with open-source tools.
-
-**1. Install dependencies** (Ubuntu / Debian)
+### Try it in a minute
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y clang-18 llvm-18 verilator build-essential git python3-pip
+sudo apt install iverilog
+git clone https://github.com/kubeworkz/grx930.git
+cd grx930/c930
+make npu
 ```
 
-**2. Clone**
-
-```bash
-git clone https://github.com/gridworkz/gridworkz-core.git
-cd gridworkz-core
-```
-
-**3. Run the photonic matrix-multiply simulation**
-
-```bash
-make sim TARGET=verilator WORKLOAD=photonic_matmul_64
-```
-
----
-
-## 💾 The GCA SDK
-
-**GCA (Gridworkz Compute Architecture)** is an open, CUDA-style parallel programming framework. If you can write CUDA or HIP, you will be able to write kernels for Gridworkz.
-
-```cpp
-#include <gca.h>
-
-// Maps onto the quad-core RISC-V threads
-__global__ void vectorAdd(float* A, float* B, float* C, int N) {
-    int idx = gca_blockIdx_x * gca_blockDim_x + gca_threadIdx_x;
-    if (idx < N) C[idx] = A[idx] + B[idx];
-}
-
-int main() {
-    int N = 1024;
-    size_t size = N * sizeof(float);
-
-    float *d_A, *d_B, *d_C;
-    gcaMalloc((void**)&d_A, size);
-    gcaMalloc((void**)&d_B, size);
-    gcaMalloc((void**)&d_C, size);
-
-    vectorAdd<<<4, 256>>>(d_A, d_B, d_C, N);
-    gcaDeviceSynchronize();
-
-    gcaFree(d_A); gcaFree(d_B); gcaFree(d_C);
-    return 0;
-}
-```
-
-```bash
-gcacc vector_add.gca -o vector_add --target=sim_verilator
-./vector_add
-```
-
----
-
-## 📂 Repository layout
+## This repository
 
 ```text
 gridworkz-core/
-├── hw/                     # HARDWARE
-│   ├── rtl/                # Synthesizable SystemVerilog / Verilog
-│   │   ├── riscv64/        # Quad-core RV64 host
-│   │   ├── npu/            # Dual NPUs
-│   │   └── photonic_g100/  # G100 GPU + photonic chiplet logic
-│   ├── sim/
-│   │   ├── verilator/      # C++ simulation targets
-│   │   └── cocotb/         # Python verification benches
-│   └── boards/             # FPGA constraints & pin mappings
-├── sdk/                    # SOFTWARE
-│   ├── gca-compiler/       # LLVM-based kernel compiler (gcacc)
-│   ├── gca-runtime/        # Bare-metal runtime APIs
-│   ├── include/            # gca.h, gca_photonic.h
-│   ├── lib/                # gblas math library
-│   └── examples/           # Sample kernels
-├── docs/                   # Docs in Markdown (published at gridworkz.com/docs)
-├── website/                # gridworkz.com (Astro + Starlight)
-└── Makefile
+├── website/   # gridworkz.com (Astro + Starlight), deployed by Netlify
+├── docs/      # Docs pages in Markdown, served at gridworkz.com/docs
+├── hw/, sdk/  # Placeholders from the original layout; the real code is in kubeworkz
+└── netlify.toml
 ```
 
----
+See [`website/README.md`](website/README.md) to run the site locally, and [`docs/README.md`](docs/README.md) to add a docs page.
 
-## 🎓 Academic allocations & physical boards
+## Contributing
 
-Ready to go from simulation to real hardware? We supply FPGA evaluation kits to qualified university labs and public research teams.
-
-Request an allocation at **[gridworkz.com/labs](https://gridworkz.com/labs)**.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions from university labs, silicon engineers, compiler researchers and open-source developers. See [CONTRIBUTING.md](CONTRIBUTING.md). All commits must be signed off (`git commit -s`).
-
-## 📄 License
-
-Gridworkz is licensed under the [Apache License, Version 2.0](LICENSE). You are free to modify, fork, simulate and tape out commercial versions of this code.
+Fixes to the site and docs are welcome here. See [CONTRIBUTING.md](CONTRIBUTING.md). Hardware and software changes belong in the kubeworkz repositories above.
