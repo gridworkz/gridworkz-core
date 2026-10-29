@@ -8,6 +8,11 @@ export const site = {
   githubOrg: 'https://github.com/kubeworkz',
   version: 'v1.0.0-beta',
   contactEmail: 'dave@gridworkz.com',
-  // Show the live GitHub stats bar only once the repo is public and has traction.
+  // Live GitHub stats bar under the homepage hero. Turn on once the numbers
+  // help rather than hurt (a few dozen stars and some outside contributors).
   showRepoStats: false,
+  // Workflow file whose successful runs on main count as "verified builds",
+  // e.g. 'verify.yml'. Leave empty until RTL verification runs in CI; the
+  // tile is hidden until then.
+  verifyWorkflow: '',
 };

@@ -35,6 +35,14 @@ npm run build    # static output in dist/
 - [ ] Wire the lab request form (Netlify Forms works as-is; on Vercel use Formspree or similar)
 - [ ] Enable Plausible (snippet commented in `src/layouts/Base.astro`)
 - [ ] Social share image (`og:image`)
-- [ ] Turn on `showRepoStats` once the repo is public
 - [ ] Replace the "coming soon" terminal output (`src/components/Terminal.astro`) with real simulator output
 - [ ] Confirm license choice for RTL (Apache 2.0 vs Solderpad / CERN-OHL)
+
+## Live GitHub stats bar
+
+A strip under the homepage hero showing stars, contributors, open pull requests and forks, read from GitHub on every deploy. It's **off** until the numbers help rather than hurt.
+
+- **Turn it on:** set `showRepoStats: true` in `src/site.ts`.
+- **Verified builds:** once RTL verification runs in GitHub Actions, set `verifyWorkflow` to that workflow's file name (e.g. `'verify.yml'`). Its successful runs on `main` replace the Forks tile.
+- Uses the `GITHUB_TOKEN` Netlify environment variable. If GitHub can't be reached during a deploy, the bar is left out rather than showing wrong numbers.
+
