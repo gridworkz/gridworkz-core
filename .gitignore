@@ -1,0 +1,12 @@
+build/
+obj_dir/
+*.vcd
+*.fst
+*.o
+*.so
+*.a
+__pycache__/
+.venv/
+sim_build/
+results.xml
+.DS_Store

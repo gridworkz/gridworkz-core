@@ -1,0 +1,130 @@
+---
+import { site } from '../site';
+const blocks = [
+  {
+    id: 'riscv', name: 'Quad-Core RISC-V64', sub: 'Host · RV64G', area: 'a',
+    body: 'Out-of-order, quad-core 64-bit RISC-V host. No secret microcode, no black-box enclaves. Add vector extensions, design your own instructions, compile with stock LLVM.',
+    rtl: 'hw/rtl/riscv64', docs: '/docs/hardware/riscv64',
+    facts: [['ISA', 'RV64GC'], ['Cores', '4'], ['Language', 'SystemVerilog']],
+  },
+  {
+    id: 'npu', name: 'Dual Edge NPU', sub: 'AI subsystem · bare-metal', area: 'b',
+    body: 'Two independent neural processing units mapped directly onto the memory grid. Every register is exposed for quantization, sparsity and activation research.',
+    rtl: 'hw/rtl/npu', docs: '/docs/hardware/npu',
+    facts: [['Units', '2'], ['Datatypes', 'INT4/8 · FP4/8/16'], ['Language', 'SystemVerilog']],
+  },
+  {
+    id: 'g100', name: 'G100 GPU', sub: 'Graphics & compute cluster', area: 'c',
+    body: 'General-purpose compute cluster that schedules work onto the photonic chiplet and keeps a digital fallback path for every kernel.',
+    rtl: 'hw/rtl/photonic_g100', docs: '/docs/hardware/g100',
+    facts: [['Role', 'GEMM scheduler'], ['Interface', 'Unified memory bus']],
+  },
+  {
+    id: 'photonic', name: 'Photonic Tensor Chiplet', sub: 'Co-packaged · laser-driven GEMM', area: 'd',
+    body: 'Analog electro-optic array that performs matrix multiplication by routing light through silicon waveguides. Programmed from C++ via gca_photonic.h.',
+    rtl: 'hw/rtl/photonic_g100', docs: '/docs/sdk/photonic-compute',
+    facts: [['Tile', '64 × 64'], ['Precision', 'FP16 · INT8 · FP4/6'], ['API', 'gcaPhotonicMatMul()']],
+  },
+];
+---
+<div class="arch" data-arch>
+  <div class="diagram" role="group" aria-label="Gridworkz platform block diagram">
+    <div class="board-label mono">GRIDWORKZ DEV PLATFORM</div>
+    <div class="grid">
+      {blocks.map((b, i) => (
+        <button type="button" class={`blk blk-${b.area}`} data-id={b.id} aria-pressed={i === 0 ? 'true' : 'false'}>
+          <span class="tag">{b.sub}</span>
+          <span class="nm">{b.name}</span>
+        </button>
+      ))}
+      <span class="bus bus-h mono" aria-hidden="true">◄ CXL bus ►</span>
+      <span class="bus bus-v1" aria-hidden="true"></span>
+      <span class="bus bus-v2" aria-hidden="true"></span>
+    </div>
+    <p class="hint mono">Select a block to view source, registers and pinout →</p>
+  </div>
+  <aside class="panel" aria-live="polite">
+    {blocks.map((b, i) => (
+      <div class="pane" data-pane={b.id} hidden={i !== 0}>
+        <span class="tag">{b.sub}</span>
+        <h3>{b.name}</h3>
+        <p>{b.body}</p>
+        <dl>{b.facts.map(([k, v]) => (<><dt>{k}</dt><dd class="mono">{v}</dd></>))}</dl>
+        <div class="links">
+          <a class="mono" href={`${site.repo}/tree/main/${b.rtl}`}>RTL source ↗<small>{b.rtl}</small></a>
+          <a class="mono" href={b.docs}>Register map →</a>
+          <a class="mono" href="/docs/hardware/pinout">Pinout →</a>
+        </div>
+      </div>
+    ))}
+  </aside>
+</div>
+<style>
+  .arch { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 960px) { .arch { grid-template-columns: 1.55fr 1fr; } }
+  .diagram {
+    position: relative; border: 1px dashed var(--gw-line-strong); border-radius: 10px;
+    padding: 44px 20px 20px; background: #0b0d13;
+  }
+  .board-label { position: absolute; top: 14px; left: 20px; font-size: .72rem; letter-spacing: .14em; color: var(--gw-steel); }
+  .grid {
+    position: relative; display: grid; gap: 56px 64px;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 'a b' 'c c';
+  }
+  .blk {
+    all: unset; box-sizing: border-box; cursor: pointer; position: relative; z-index: 1;
+    display: flex; flex-direction: column; gap: 8px; padding: 18px;
+    border: 1px solid var(--gw-line-strong); border-radius: var(--gw-radius);
+    background: var(--gw-surface); transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  .blk:hover, .blk:focus-visible { border-color: var(--gw-teal); }
+  .blk[aria-pressed='true'] { border-color: var(--gw-teal); background: #0f1d1d; box-shadow: 0 0 0 1px var(--gw-teal), 0 0 32px -6px #00f5d466; }
+  .nm { color: var(--gw-white); font-weight: 600; font-size: 1.05rem; }
+  .blk-a { grid-area: a; } .blk-b { grid-area: b; }
+  .blk-c { grid-area: c; padding-bottom: 104px; }
+  .blk-d {
+    grid-area: c; align-self: end; margin: 0 18px 18px;
+    border-style: dashed; background: #0c1418;
+  }
+  .bus { position: absolute; z-index: 0; }
+  .bus-h {
+    top: 34px; left: calc(50% - 32px); width: 64px; text-align: center;
+    font-size: .6rem; color: var(--gw-teal); white-space: nowrap; overflow: visible;
+    display: flex; justify-content: center;
+  }
+  .bus-v1, .bus-v2 { width: 2px; height: 56px; background: linear-gradient(var(--gw-teal), transparent); top: calc(50% - 56px); }
+  .grid { grid-template-rows: auto auto; }
+  .bus-v1 { left: 25%; } .bus-v2 { left: 75%; }
+  .hint { font-size: .72rem; margin: 18px 0 0; }
+  @media (max-width: 560px) {
+    .grid { gap: 40px 14px; }
+    .bus-h { display: none; }
+    .blk { padding: 14px; }
+    .nm { font-size: .95rem; }
+  }
+  .panel {
+    border: 1px solid var(--gw-line); border-radius: 10px; padding: 28px;
+    background: var(--gw-surface); min-height: 100%;
+  }
+  .pane h3 { margin-top: 8px; font-size: 1.4rem; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; margin: 18px 0 24px; font-size: .88rem; }
+  dt { color: var(--gw-steel); } dd { margin: 0; color: var(--gw-white); }
+  .links { display: grid; gap: 8px; }
+  .links a {
+    display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; font-size: .82rem;
+    border: 1px solid var(--gw-line-strong); border-radius: var(--gw-radius);
+  }
+  .links a:hover { border-color: var(--gw-teal); text-decoration: none; }
+  .links small { color: var(--gw-steel); }
+</style>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch]').forEach((root) => {
+    const btns = root.querySelectorAll<HTMLButtonElement>('.blk');
+    const panes = root.querySelectorAll<HTMLElement>('[data-pane]');
+    btns.forEach((b) => b.addEventListener('click', () => {
+      btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      panes.forEach((p) => (p.hidden = p.dataset.pane !== b.dataset.id));
+    }));
+  });
+</script>
