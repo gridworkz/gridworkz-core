@@ -17,4 +17,6 @@ Gridworkz designs open hardware for AI research. The work lives in three reposit
 - **Program the GPU:** [GRXCP](/docs/software/grxcp)
 - **Read the hardware:** [RISC-V CPU and memory map](/docs/hardware/riscv64) · [NPU registers](/docs/hardware/npu) · [G100 GPU](/docs/hardware/g100) · [Photonic tensor accelerator](/docs/hardware/pta) · [Board pinout](/docs/hardware/pinout)
 
+All three repositories are licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). Third-party tools, scripts and PDK files included in them keep their own terms.
+
 These pages summarize the repositories. When they disagree, the repository is right.
