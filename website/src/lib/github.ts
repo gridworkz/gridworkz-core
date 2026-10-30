@@ -15,3 +15,15 @@ export async function ghCount(path: string): Promise<number> {
   if (last) return Number(last[1]);
   return ((await res.json()) as unknown[]).length;
 }
+
+// Every item of a paginated list (up to maxPages × 100).
+export async function ghAll<T>(path: string, maxPages = 10): Promise<T[]> {
+  const out: T[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await gh(`${path}${path.includes('?') ? '&' : '?'}per_page=100&page=${page}`);
+    const items = (await res.json()) as T[];
+    out.push(...items);
+    if (!res.headers.get('link')?.includes('rel="next"')) break;
+  }
+  return out;
+}

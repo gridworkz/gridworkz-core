@@ -40,9 +40,8 @@ npm run build    # static output in dist/
 
 ## Live GitHub stats bar
 
-A strip under the homepage hero showing stars, contributors, open pull requests and forks, read from GitHub on every deploy. It's **off** until the numbers help rather than hurt.
+A strip under the homepage hero showing stars, contributors, open pull requests and forks, **summed across the repos in `statsRepos`** (`src/site.ts`): grx930, grxgpu and grxcp. Contributors who work on several repos are counted once. Read from GitHub on every deploy.
 
-- **Turn it on:** set `showRepoStats: true` in `src/site.ts`.
-- **Verified builds:** once RTL verification runs in GitHub Actions, set `verifyWorkflow` to that workflow's file name (e.g. `'verify.yml'`). Its successful runs on `main` replace the Forks tile.
-- Uses the `GITHUB_TOKEN` Netlify environment variable. If GitHub can't be reached during a deploy, the bar is left out rather than showing wrong numbers.
-
+- **On/off:** `showRepoStats` in `src/site.ts`.
+- **Verified builds:** set `verify: { repo, workflow }` (e.g. `{ repo: 'kubeworkz/grx930', workflow: 'verify.yml' }`) once RTL verification runs in GitHub Actions. Its successful runs on `main` replace the Forks tile.
+- Uses the `GITHUB_TOKEN` Netlify environment variable. If any repo can't be read during a deploy, the bar is left out rather than showing partial numbers.
