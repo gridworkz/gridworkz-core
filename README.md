@@ -26,6 +26,8 @@ The hardware and software are in three repositories under **[github.com/kubework
 | **[grxgpu](https://github.com/kubeworkz/grxgpu)** | G100: open RISC-V GPU on Vortex with tensor cores, DXA, ray tracing and graphics, plus the photonic tensor accelerator (PTA) design proposals | Simulation; discovery configuration under review |
 | **[grxcp](https://github.com/kubeworkz/grxcp)** | GRXCP: CUDA-style runtime, `grxcc` compiler, grxBLAS and tools for the G100 and GRX930 | In active development |
 
+All three are licensed under the **[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)**: use, modify, fork and tape out, with no royalties. Third-party tools, scripts and PDK files included in those repos keep their own terms.
+
 ### Try it in a minute
 
 ```bash
