@@ -14,11 +14,10 @@ export const site = {
   },
   version: 'v1.0.0-beta',
   contactEmail: 'dave@gridworkz.com',
-  // Live GitHub stats bar under the homepage hero. Turn on once the numbers
-  // help rather than hurt (a few dozen stars and some outside contributors).
-  showRepoStats: false,
-  // Workflow file whose successful runs on main count as "verified builds",
-  // e.g. 'verify.yml'. Leave empty until RTL verification runs in CI; the
-  // tile is hidden until then.
-  verifyWorkflow: '',
+  // Live GitHub stats bar under the homepage hero, summed across statsRepos.
+  showRepoStats: true,
+  statsRepos: ['kubeworkz/grx930', 'kubeworkz/grxgpu', 'kubeworkz/grxcp'],
+  // "Verified builds" tile: successful runs on main of this workflow, e.g.
+  // { repo: 'kubeworkz/grx930', workflow: 'verify.yml' }. Hidden while empty.
+  verify: { repo: '', workflow: '' },
 };
