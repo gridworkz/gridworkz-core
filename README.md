@@ -41,7 +41,6 @@ make npu
 gridworkz-core/
 ├── website/   # gridworkz.com (Astro + Starlight), deployed by Netlify
 ├── docs/      # Docs pages in Markdown, served at gridworkz.com/docs
-├── hw/, sdk/  # Placeholders from the original layout; the real code is in kubeworkz
 └── netlify.toml
 ```
 

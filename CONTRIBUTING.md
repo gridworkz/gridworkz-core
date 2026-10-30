@@ -1,44 +1,36 @@
-# Contributing to Gridworkz
+# Contributing to gridworkz-core
 
-Thank you for helping build the Linux of chip design! We welcome contributions from university labs, silicon engineers, compiler researchers and open-source developers.
+This repository holds the **gridworkz.com website and its docs**. Fixes and improvements are welcome: broken links, outdated specs, clearer docs, layout bugs.
 
-Gridworkz spans hardware RTL and a software SDK, so we use a structured process to keep every change synthesizable.
+**Hardware and software changes go in the kubeworkz repositories:**
 
-## 🛠️ Where you can contribute
+| Repository | For |
+|---|---|
+| [kubeworkz/grx930](https://github.com/kubeworkz/grx930) | GRX930 RISC-V SoC and NPU: RTL, testbenches, FPGA flow |
+| [kubeworkz/grxgpu](https://github.com/kubeworkz/grxgpu) | G100 GPU and photonic tensor accelerator proposals |
+| [kubeworkz/grxcp](https://github.com/kubeworkz/grxcp) | GRXCP runtime, compiler and libraries |
 
-- **Hardware (`/hw`):** RISC-V vector extensions, NPU matrix block optimizations, memory controller fixes, FPGA constraint files.
-- **Software SDK (`/sdk`):** GCA compiler optimizations, runtime improvements, new example kernels, `gblas` math library work.
-- **Verification (`/hw/sim`):** More Verilator testbench coverage, `cocotb` test configurations.
-- **Documentation (`/docs`):** Register maps, hardware tutorials, API references.
+## What's here
 
-## 🚀 Branching & submission
+- `website/`: the site (Astro + Starlight). Run it with `cd website && npm install && npm run dev`. Needs Node 24.
+- `docs/`: docs pages in Markdown, served at gridworkz.com/docs. See [`docs/README.md`](docs/README.md) to add a page.
 
-1. **Fork the repository** and branch off `main` (e.g. `feature/riscv-vector-ext` or `bugfix/gca-malloc-leak`).
-2. **Run the checks locally** before opening a pull request:
-   ```bash
-   make test-hw-all    # Hardware RTL verification
-   make test-sdk-all   # SDK verification
-   ```
-   > These targets are placeholders until the first RTL and SDK drops land.
-3. **Open a pull request** against `main`. Describe the change, its architectural effects, and attach verification logs or waveforms.
+## Making a change
 
-## 📐 Code & design standards
+1. **Fork the repository** and branch off `main`, e.g. `docs/npu-register-fix` or `site/mobile-nav`.
+2. **Build it:** `npm run build` in `website/` must pass. Check changed pages at desktop and phone widths.
+3. **Open a pull request** against `main`. Merges to `main` deploy to gridworkz.com automatically.
 
-### Hardware RTL
-- All code in `/hw/rtl` must be synthesizable **SystemVerilog** or **Verilog**.
-- No vendor-specific primitives (e.g. Xilinx/Intel macros) in core files. The platform must stay foundry-neutral.
-- Code must compile warning-free under **Verilator**.
+## Specs and claims
 
-### Software SDK
-- Follow modern **C++17** for compiler infrastructure.
-- New GCA APIs must match the style and semantics of `sdk/include/gca.h`.
+Every technical fact on the site should trace to a source in grx930, grxgpu or grxcp. If you change a spec, link that source in your pull request. Keep status words honest: "verified in simulation", "timing closed", "in progress" and "in design" mean different things.
 
-## 📜 Developer Certificate of Origin (DCO)
+## Sign-off
 
-To keep the codebase free from legal disputes, every commit must be signed off with `-s`:
+Sign off your commits with `-s`:
 
 ```bash
-git commit -s -m "hw/riscv: Optimize instruction decode stage"
+git commit -s -m "docs: fix NPU1 CSR offset"
 ```
 
-This adds `Signed-off-by: Your Name <your@email.com>` and certifies, under the [Developer Certificate of Origin](https://developercertificate.org/), that you have the right to submit the work under the Apache 2.0 license.
+This adds `Signed-off-by: Your Name <your@email.com>`, certifying under the [Developer Certificate of Origin](https://developercertificate.org/) that you have the right to submit the work under this repository's license.
