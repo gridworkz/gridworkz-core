@@ -7,7 +7,7 @@ const tools = [
   { href: '/playground/cuda-check', tag: 'Live', title: 'CUDA porting checker', body: 'Paste a CUDA file and see which calls map straight to GRXCP, which differ, and which aren’t available yet.', live: true },
   { href: '/playground/npu-registers', tag: 'Live · model', title: 'NPU register playground', body: 'Program the GRX930 NPU’s registers, start a GEMM, watch BUSY/DONE/ERROR and the queue, and get the matching C driver code.', live: true },
   { href: '/playground/systolic', tag: 'Live · model', title: 'Systolic array visualizer', body: 'Pick a matrix shape and precision and watch a GEMM flow through the 8×8 NPU array, pass by pass.', live: true },
-  { tag: 'Coming next', title: 'Simulation replays', body: 'Browse real GRX930 and G100 simulation runs: logs, pass/fail and waveforms, straight from the test suites.' },
+  { href: '/playground/replays', tag: 'Live · replayed RTL', title: 'Simulation replays', body: 'The latest real GRX930 runs: NPU GEMMs, CPU and arbiter equivalence checks and the full SoC, with pass/fail and logs.', live: true },
 ];
 ---
 <Base title="Playground" description="Try the Gridworkz ecosystem in your browser: a CUDA porting checker for GRXCP, with an NPU playground, systolic array visualizer and online simulator on the way.">
