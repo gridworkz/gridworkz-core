@@ -43,11 +43,22 @@ Source: header comment of `c930/rtl/c930_npu_csr.sv`.
 
 ## Limits
 
-| Parameter | Default |
-|---|---|
-| Systolic array | 8 × 8 PEs (`NUM_ROWS` / `NUM_COLS`) |
-| Accumulator | 48-bit fixed point, or FP16 with a CLA adder |
-| Max M / K / N | 64 / 256 / 8 |
+| Parameter | GRX930 SoC build | Core default |
+|---|---|---|
+| Systolic array | 8 × 8 PEs | `NUM_ROWS` × `NUM_COLS` = 8 × 8 |
+| Max M (output rows) | **8** | 64 |
+| Max N (output columns) | **12** | 8 |
+| Max K (reduction length) | **16** | 256 |
+| Command queue depth | 4 | 4 |
+| Accumulator | 48-bit; C holds the low 32 bits (INT32, or FP32 in the float modes) | |
+
+The SoC values come from `c930/rtl/c930_soc_top.sv` and match the driver's `NPU_MAX_*` in `c930/sw/c930_npu_driver.h`. A START with dimensions outside them sets `ERROR`.
+
+## Memory layout
+
+A (M×K) and B (K×N) are row-major and packed into 32-bit words, little-endian: 4 elements per word at INT8, 2 at INT16, FP16 and BF16, 8 at INT4. C (M×N) is row-major, one 32-bit word per element. Addresses must be word-aligned.
+
+Try it in the [NPU register playground](/playground/npu-registers) or watch the dataflow in the [systolic array visualizer](/playground/systolic).
 
 ## Verification
 
