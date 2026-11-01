@@ -43,5 +43,5 @@ npm run build    # static output in dist/
 A strip under the homepage hero showing stars, contributors, open pull requests and forks, **summed across the repos in `statsRepos`** (`src/site.ts`): grx930, grxgpu and grxcp. Contributors who work on several repos are counted once. Read from GitHub on every deploy.
 
 - **On/off:** `showRepoStats` in `src/site.ts`.
-- **Verified builds:** set `verify: { repo, workflow }` (e.g. `{ repo: 'kubeworkz/grx930', workflow: 'verify.yml' }`) once RTL verification runs in GitHub Actions. Its successful runs on `main` replace the Forks tile.
+- **Verified builds:** `verify: { repo, workflow }` points at `kubeworkz/grx930`'s `sim-replays.yml`; its successful runs on `main` fill the fourth tile (in place of Forks) and link to `/playground/replays`. If that lookup fails, the bar keeps the Forks tile.
 - Uses the `GITHUB_TOKEN` Netlify environment variable. If any repo can't be read during a deploy, the bar is left out rather than showing partial numbers.

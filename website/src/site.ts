@@ -17,7 +17,8 @@ export const site = {
   // Live GitHub stats bar under the homepage hero, summed across statsRepos.
   showRepoStats: true,
   statsRepos: ['kubeworkz/grx930', 'kubeworkz/grxgpu', 'kubeworkz/grxcp'],
-  // "Verified builds" tile: successful runs on main of this workflow, e.g.
-  // { repo: 'kubeworkz/grx930', workflow: 'verify.yml' }. Hidden while empty.
-  verify: { repo: '', workflow: '' },
+  // "Verified builds" tile: successful runs on main of grx930's sim-replays
+  // workflow (NPU, CPU and full-SoC simulations; see /playground/replays).
+  // Empty strings hide the tile.
+  verify: { repo: 'kubeworkz/grx930', workflow: 'sim-replays.yml' },
 };
