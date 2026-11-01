@@ -33,9 +33,14 @@ export const REGS = [
   { off: 0x18, name: 'B_BASE', acc: 'RW', desc: 'B matrix address in DDR, word-aligned' },
   { off: 0x1c, name: 'C_BASE', acc: 'RW', desc: 'C result address in DDR, word-aligned' },
   { off: 0x20, name: 'PREC', acc: 'RW', desc: 'bits [2:0]: 0 INT8, 1 INT16, 2 FP16, 3 BF16, 4 INT4' },
-  { off: 0x38, name: 'QUEUE_STAT', acc: 'R', desc: 'bits [3:0] occupancy, bit 4 full' },
+  { off: 0x24, name: 'CYCLE_LO', acc: 'R', desc: 'Core cycles for the last command (state != IDLE)', counter: true },
+  { off: 0x28, name: 'DMA_LAST', acc: 'R', desc: 'DMA busy cycles, latched from the last completed GEMM', counter: true },
+  { off: 0x2c, name: 'OP_COUNT', acc: 'R', desc: 'PE firings: NUM_ROWS × NUM_COLS per S_RUN cycle', counter: true },
+  { off: 0x30, name: 'STALL_CT', acc: 'R', desc: 'Cycles moving weights (S_WLOAD) and reloading accumulators', counter: true },
+  { off: 0x34, name: 'DMA_CT', acc: 'R', desc: 'DMA busy cycles, live', counter: true },
+  { off: 0x38, name: 'QUEUE_STAT', acc: 'R', desc: 'Documented as bits [3:0] occupancy, bit 4 full. The RTL returns {full, count}: at depth 4, count in [2:0] and full at bit 3' },
   { off: 0x3c, name: 'QUEUE_MAX', acc: 'R', desc: 'Queue depth: 4' },
-] as const;
+] as { off: number; name: string; acc: string; desc: string; counter?: boolean }[];
 
 export const dimsOk = (m: number, n: number, k: number) =>
   m >= 1 && m <= NPU.MAX_M && n >= 1 && n <= NPU.MAX_N && k >= 1 && k <= NPU.MAX_K;
