@@ -32,13 +32,19 @@ if (site.showRepoStats && repos.length) {
       { label: 'Forks', value: sum((r) => r.info.forks_count), href: site.githubOrg },
     ];
 
+    // Its own try: if this one call fails, keep the Forks tile rather than
+    // losing the whole bar over it.
     if (site.verify.repo && site.verify.workflow) {
-      const runs = await gh(`repos/${site.verify.repo}/actions/workflows/${site.verify.workflow}/runs?branch=main&status=success&per_page=1`)
-        .then((r) => r.json() as Promise<{ total_count: number }>);
-      stats.splice(3, 1, {
-        label: 'Verified builds', value: runs.total_count,
-        href: `https://github.com/${site.verify.repo}/actions/workflows/${site.verify.workflow}`,
-      });
+      try {
+        const runs = await gh(`repos/${site.verify.repo}/actions/workflows/${site.verify.workflow}/runs?branch=main&status=success&per_page=1`)
+          .then((r) => r.json() as Promise<{ total_count: number }>);
+        stats.splice(3, 1, {
+          label: 'Verified builds', value: runs.total_count,
+          href: '/playground/replays',
+        });
+      } catch (e) {
+        console.warn(`[repo-stats] verified-builds tile skipped: ${(e as Error).message}`);
+      }
     }
   } catch (e) {
     console.warn(`[repo-stats] skipped: ${(e as Error).message}`);
