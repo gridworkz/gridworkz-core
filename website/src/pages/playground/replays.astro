@@ -55,15 +55,15 @@ const label = { pass: 'Passed', fail: 'Failed', timeout: 'Timed out' } as const;
                 <dl class="mono facts">
                   <div><dt>Command</dt><dd><code>{r.command}</code></dd></div>
                   <div><dt>Time</dt><dd>{dur(r.seconds)}</dd></div>
-                  <div><dt>[PASS] lines</dt><dd>{r.pass_lines}</dd></div>
-                  {r.fail_lines > 0 && <div><dt>[FAIL] lines</dt><dd class="bad">{r.fail_lines}</dd></div>}
+                  <div><dt>PASS verdicts</dt><dd>{r.pass_lines}</dd></div>
+                  {r.fail_lines > 0 && <div><dt>FAIL verdicts</dt><dd class="bad">{r.fail_lines}</dd></div>}
                   {r.status !== 'pass' && <div><dt>Exit code</dt><dd class="bad">{r.exit_code}</dd></div>}
                 </dl>
                 {tails[r.id] && (
                   <details open={r.status !== 'pass'}>
                     <summary class="mono">{tails[r.id].length === 1 ? 'The last line of the log' : `Last ${tails[r.id].length} lines of the log`}</summary>
                     <pre class="mono"><code>{tails[r.id].map((l) => (
-                      <span class={/\[FAIL\]|FATAL|\$fatal/.test(l) ? 'l-fail' : /\[PASS\]/.test(l) ? 'l-pass' : ''}>{l}{'\n'}</span>
+                      <span class={/\[FAIL\]|\bFAIL\b|FATAL|\$fatal/.test(l) ? 'l-fail' : /\[PASS\]|\bPASS\b/.test(l) ? 'l-pass' : ''}>{l}{'\n'}</span>
                     ))}</code></pre>
                   </details>
                 )}
