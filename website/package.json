@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/fetch-pta-web.mjs && astro build",
+    "build": "node scripts/fetch-modules.mjs && astro build",
     "preview": "astro preview",
-    "fetch:pta-web": "node scripts/fetch-pta-web.mjs"
+    "fetch:modules": "node scripts/fetch-modules.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

@@ -4,7 +4,7 @@ import PageHead from '../../components/PageHead.astro';
 import { existsSync, readFileSync } from 'node:fs';
 import { site } from '../../site';
 
-// Present when scripts/fetch-pta-web.mjs fetched and checked the module.
+// Present when scripts/fetch-modules.mjs fetched and checked the module.
 const dir = 'public/pta-web';
 const manifest = existsSync(`${dir}/manifest.json`) ? JSON.parse(readFileSync(`${dir}/manifest.json`, 'utf8')) : null;
 const rows = manifest && existsSync(`${dir}/rows.json`) ? JSON.parse(readFileSync(`${dir}/rows.json`, 'utf8')) : [];

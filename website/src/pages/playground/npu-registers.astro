@@ -2,16 +2,31 @@
 import Base from '../../layouts/Base.astro';
 import PageHead from '../../components/PageHead.astro';
 import { site } from '../../site';
+import { existsSync, readFileSync } from 'node:fs';
+
+// Present when scripts/fetch-modules.mjs fetched and checked the module.
+const dir = 'public/npu-web';
+const manifest = existsSync(`${dir}/manifest.json`) ? JSON.parse(readFileSync(`${dir}/manifest.json`, 'utf8')) : null;
+const wasmKB = manifest ? Math.round((manifest.files?.['npu_web.wasm']?.bytes ?? 0) / 1024) : 0;
 ---
 <Base title="NPU register playground" description="Program the GRX930 NPU's registers in your browser: start a GEMM, watch BUSY/DONE/ERROR and the command queue, see the packed memory, and get the matching C driver code.">
   <PageHead eyebrow="Playground · NPU register playground" title="Drive the GRX930 NPU from its registers.">
-    Set the dimensions, precision and buffer addresses, then write START. The NPU's register file, status flags,
-    command queue and memory update the way the driver's contract says they do, and the C code to do it on the real chip is written for you.
+    Set the dimensions, precision and buffer addresses, then write START. The NPU's own RTL runs in your browser:
+    watch its register file, status flags, command queue and memory, and get the C code that does the same on the chip.
   </PageHead>
 
   <section style="padding-top:0">
     <div class="wrap">
-      <p class="model mono"><span class="st">Model</span> Behavior and data model of <code>c930_npu_csr.sv</code> and <code>c930_npu_driver.c</code>, not the RTL running. Timing is illustrative; read <code>CYCLE_LO</code>, <code>OP_COUNT</code> and <code>STALL_CT</code> from <code>make npu</code> or the board for real cycle counts.</p>
+      <div class="engine mono" id="engine" data-rtl={manifest ? '1' : ''}>
+        <span class="lab">Engine</span>
+        <div class="seg" role="radiogroup" aria-label="Engine">
+          <button type="button" role="radio" data-eng="rtl" aria-checked={manifest ? 'true' : 'false'} disabled={!manifest}>Real RTL</button>
+          <button type="button" role="radio" data-eng="model" aria-checked={manifest ? 'false' : 'true'}>Model</button>
+        </div>
+        <span class="cyc" id="cycWrap">cycle <b id="cyc">0</b></span>
+      </div>
+      <p class="model mono" id="lblRtl" hidden={!manifest}><span class="st st-live">Real RTL</span> <code>c930_npu_top</code> from <a href={`${site.hw.soc}/tree/main/c930/rtl`}>kubeworkz/grx930</a>, Verilated and compiled to WebAssembly{manifest && <> ({wasmKB} KB, <a href={`https://github.com/${manifest.repo}/commit/${manifest.commit}`}>{manifest.commit.slice(0, 7)}</a>)</>}. Registers go over its AXI4-Lite port, A, B and C live in a simulated 64 KB DDR, and every cycle is the RTL's own; reading a register costs bus cycles too, as it does from the CPU. Its CI publishes a build only when 45 GEMMs across all five precisions give the same bytes natively and in WebAssembly. The module has one NPU, so NPU0 and NPU1 drive the same RTL and only change the C code.</p>
+      <p class="model mono" id="lblModel" hidden={!!manifest}><span class="st">Model</span> Behavior and data model of <code>c930_npu_csr.sv</code> and <code>c930_npu_driver.c</code>, not the RTL running. Timing is illustrative and the counters aren't modeled.{!manifest && <> The real-RTL build wasn't available when this page was built.</>}</p>
       <div class="pg">
         <!-- 1. Program -->
         <div class="card ctl">
@@ -25,6 +40,7 @@ import { site } from '../../site';
             <label>A_BASE<input id="a" class="mono" value="0x8000" /></label>
             <label>B_BASE<input id="b" class="mono" value="0x8400" /></label>
             <label>C_BASE<input id="c" class="mono" value="0x8800" /></label>
+            <label class="rtl-only">Clock<select id="speed"><option value="5">5 cycles / frame</option><option value="20" selected>20 cycles / frame</option><option value="100">100 cycles / frame</option><option value="1000">1000 cycles / frame</option></select></label>
           </div>
           <div id="warn" class="warn mono" aria-live="polite"></div>
           <div class="btns">
@@ -32,7 +48,7 @@ import { site } from '../../site';
             <button class="btn btn-ghost" id="reroll" type="button">New data</button>
             <button class="btn btn-ghost" id="reset" type="button">Reset</button>
           </div>
-          <p class="hint">Try: START four times quickly to fill the queue, then once more. Or set DIM_K to 20.</p>
+          <p class="hint">Try: START four times quickly to fill the queue, then once more (slow the clock first). Or set DIM_K to 20, then try a good command after it.</p>
         </div>
 
         <!-- 2. Registers + status -->
@@ -55,7 +71,8 @@ import { site } from '../../site';
 
       <!-- 3. Memory -->
       <div class="card mem">
-        <h3>3 · Memory <span class="sub">little-endian, row-major, packed per 32-bit word</span></h3>
+        <h3>3 · Memory <span class="sub" id="memSub">little-endian, row-major, packed per 32-bit word</span></h3>
+        <p class="verdict mono" id="verdict" aria-live="polite"></p>
         <div class="memgrid" id="mem"></div>
       </div>
 
@@ -85,10 +102,13 @@ import { site } from '../../site';
   const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
 
   type Cmd = { m: number; n: number; k: number; a: number; b: number; c: number; prec: Prec; A: number[][]; B: number[][] };
+  type MemBlk = { addr: number; words: number[]; prec: Prec; dims: string } | null;
   let seed = 930;
+  let engine: 'rtl' | 'model' = $('engine').dataset.rtl ? 'rtl' : 'model';
+  // model state
   let busy = false, done = false, error = false;
   let queue: Cmd[] = [];
-  let mem: Record<'A' | 'B' | 'C', { addr: number; words: number[]; prec: Prec; dims: string } | null> = { A: null, B: null, C: null };
+  let mem: Record<'A' | 'B' | 'C', MemBlk> = { A: null, B: null, C: null };
   const regs: Record<string, number> = {};
   let changed = new Set<string>();
   let tab: 'drv' | 'raw' = 'drv';
@@ -96,8 +116,9 @@ import { site } from '../../site';
   function log(msg: string, kind = '') {
     const li = document.createElement('li'); li.className = kind; li.innerHTML = msg;
     $('log').prepend(li);
-    while ($('log').children.length > 40) $('log').lastChild!.remove();
+    while ($('log').children.length > 60) $('log').lastChild!.remove();
   }
+  const at = () => (engine === 'rtl' && rtl ? `<span class="t">@${rtl.cycles()}</span> ` : '');
   function current(): Cmd {
     const m = num('m'), n = num('n'), k = num('k'), prec = Number(($('prec') as HTMLSelectElement).value) as Prec;
     const r = rng(seed);
@@ -105,6 +126,8 @@ import { site } from '../../site';
     const B = randomMatrix(Math.max(1, Math.min(k, 20)), Math.max(1, Math.min(n, 16)), prec, r);
     return { m, n, k, a: parseAddr('a'), b: parseAddr('b'), c: parseAddr('c'), prec, A, B };
   }
+  const opA = (c: Cmd) => c.A.slice(0, c.m).map((r) => r.slice(0, c.k));
+  const opB = (c: Cmd) => c.B.slice(0, c.k).map((r) => r.slice(0, c.n));
   function problems(c: Cmd) {
     const p: { msg: string; driver?: boolean; hw?: boolean }[] = [];
     if (!dimsOk(c.m, c.n, c.k)) p.push({ msg: `Dimensions outside the SoC build's limits (M 1–${NPU.MAX_M}, N 1–${NPU.MAX_N}, K 1–${NPU.MAX_K}): the driver returns -2; written directly, START sets ERROR.`, hw: true });
@@ -121,10 +144,14 @@ import { site } from '../../site';
     }
     return p;
   }
+  const PROG: [string, number, (c: Cmd) => number][] = [
+    ['DIM_M', 0x08, (c) => c.m], ['DIM_N', 0x0c, (c) => c.n], ['DIM_K', 0x10, (c) => c.k],
+    ['A_BASE', 0x14, (c) => c.a], ['B_BASE', 0x18, (c) => c.b], ['C_BASE', 0x1c, (c) => c.c], ['PREC', 0x20, (c) => c.prec],
+  ];
+  const showVal = (nm: string, v: number) => (Number.isNaN(v) ? '?' : nm.endsWith('BASE') ? hex(v, 4) : String(v));
 
   function writeRegs(c: Cmd) {
-    const vals: Record<string, number> = { DIM_M: c.m, DIM_N: c.n, DIM_K: c.k, A_BASE: c.a, B_BASE: c.b, C_BASE: c.c, PREC: c.prec };
-    for (const [k, v] of Object.entries(vals)) if (regs[k] !== v) { regs[k] = v; changed.add(k); }
+    for (const [nm, , f] of PROG) { const v = f(c); if (regs[nm] !== v) { regs[nm] = v; changed.add(nm); } }
   }
   function status() { return (busy ? 1 : 0) | (done ? 2 : 0) | (error ? 4 : 0); }
 
@@ -132,23 +159,26 @@ import { site } from '../../site';
     const c = current();
     const npu = Number(($('npu') as HTMLSelectElement).value);
     $('baseLbl').textContent = hex(NPU.BASE[npu]);
-    // warnings
-    const pr = problems(c);
-    $('warn').innerHTML = pr.map((p) => `<p>⚠ ${esc(p.msg)}</p>`).join('');
-    // register table
-    regs.STATUS = status(); regs.CTRL = 0; regs.QUEUE_STAT = queue.length | (queue.length >= NPU.QUEUE_DEPTH ? 0x10 : 0); regs.QUEUE_MAX = NPU.QUEUE_DEPTH;
+    $('warn').innerHTML = problems(c).map((p) => `<p>⚠ ${esc(p.msg)}</p>`).join('');
+    if (engine === 'model') {
+      regs.STATUS = status(); regs.CTRL = 0; regs.QUEUE_STAT = queue.length | (queue.length >= NPU.QUEUE_DEPTH ? 0x10 : 0); regs.QUEUE_MAX = NPU.QUEUE_DEPTH;
+    }
     $('regRows').innerHTML = REGS.map((r) => {
       const v = regs[r.name] ?? 0;
-      return `<tr class="${changed.has(r.name) ? 'chg' : ''}" title="${esc(r.desc)}"><td>+${hex(r.off, 2)}</td><td>${r.name}<span class="acc">${r.acc}</span></td><td>${Number.isNaN(v) ? '—' : hex4(v)}</td></tr>`;
+      const shown = engine === 'model' && r.counter ? '—' : Number.isNaN(v) ? '—' : hex4(v);
+      return `<tr class="${changed.has(r.name) ? 'chg' : ''}" title="${esc(r.desc)}"><td>+${hex(r.off, 2)}</td><td>${r.name}<span class="acc">${r.acc}</span></td><td>${shown}</td></tr>`;
     }).join('');
     changed = new Set();
-    // status
-    $('ledBusy').classList.toggle('on', busy); $('ledDone').classList.toggle('on', done); $('ledErr').classList.toggle('on', error);
-    $('qdots').innerHTML = Array.from({ length: NPU.QUEUE_DEPTH }, (_, i) => `<i class="${i < queue.length ? 'on' : ''}"></i>`).join('');
+    const st = engine === 'rtl' ? regs.STATUS ?? 0 : status();
+    const q = engine === 'rtl' ? qOcc(regs.QUEUE_STAT ?? 0) : queue.length;
+    $('ledBusy').classList.toggle('on', !!(st & 1)); $('ledDone').classList.toggle('on', !!(st & 2)); $('ledErr').classList.toggle('on', !!(st & 4));
+    $('qdots').innerHTML = Array.from({ length: NPU.QUEUE_DEPTH }, (_, i) => `<i class="${i < q ? 'on' : ''}"></i>`).join('');
+    $('cyc').textContent = rtl ? String(rtl.cycles()) : '0';
     renderMem(); renderCode(c);
   }
 
   function renderMem() {
+    $('memSub').textContent = engine === 'rtl' ? 'read back from the simulated DDR · little-endian, row-major, packed per 32-bit word' : 'little-endian, row-major, packed per 32-bit word';
     $('mem').innerHTML = (['A', 'B', 'C'] as const).map((nm) => {
       const r = mem[nm];
       if (!r) return `<div class="blk"><h4>${nm}</h4><p class="empty">${nm === 'C' ? 'Written when a GEMM completes.' : 'Loaded with the next START.'}</p></div>`;
@@ -190,7 +220,7 @@ int run_gemm(void) {
 #define REG(off) (*(volatile uint32_t *)(${hex(NPU.BASE[npu])}u + (off)))
 
 void run_gemm_raw(void) {
-    while (REG(0x38) & 0x10) ;            // QUEUE_STAT.full: START would be dropped
+    while (REG(0x38) >= REG(0x3c)) ;      // queue full (QUEUE_STAT >= QUEUE_MAX under either full-bit layout): START would be dropped
     REG(0x08) = ${c.m};                     // DIM_M
     REG(0x0c) = ${c.n};                     // DIM_N
     REG(0x10) = ${c.k};                    // DIM_K
@@ -207,13 +237,14 @@ void run_gemm_raw(void) {
     $('codeOut').textContent = tab === 'drv' ? drv : raw;
   }
 
-  // ---- the engine: one command at a time, from the queue ----
+  // ---- engine 1: the model, one command at a time from the queue ----
   let running = false;
   async function pump() {
     if (running) return; running = true;
-    while (queue.length) {
+    while (queue.length && engine === 'model') {
       const cmd = queue[0];
       await sleep(250);
+      if (engine !== 'model') break;
       if (!dimsOk(cmd.m, cmd.n, cmd.k)) {
         queue.shift(); error = true; busy = false;
         log(`dispatch: dims ${cmd.m}×${cmd.n}×${cmd.k} fail the DMA's check → <b class="e">ERROR=1</b>, nothing runs`, 'e');
@@ -221,12 +252,12 @@ void run_gemm_raw(void) {
       }
       busy = true; render();
       log(`dispatch ${cmd.m}×${cmd.n}×${cmd.k} ${PREC[cmd.prec].name}: DMA loads A and B → <b>BUSY=1</b>`);
-      mem.A = { addr: cmd.a, words: pack(cmd.A.slice(0, cmd.m).map((r) => r.slice(0, cmd.k)), cmd.prec), prec: cmd.prec, dims: `${cmd.m}×${cmd.k}` };
-      mem.B = { addr: cmd.b, words: pack(cmd.B.slice(0, cmd.k).map((r) => r.slice(0, cmd.n)), cmd.prec), prec: cmd.prec, dims: `${cmd.k}×${cmd.n}` };
+      mem.A = { addr: cmd.a, words: pack(opA(cmd), cmd.prec), prec: cmd.prec, dims: `${cmd.m}×${cmd.k}` };
+      mem.B = { addr: cmd.b, words: pack(opB(cmd), cmd.prec), prec: cmd.prec, dims: `${cmd.k}×${cmd.n}` };
       render();
       await sleep(1100);
-      const C = gemm(cmd.A.slice(0, cmd.m).map((r) => r.slice(0, cmd.k)), cmd.B.slice(0, cmd.k).map((r) => r.slice(0, cmd.n)), cmd.prec);
-      mem.C = { addr: cmd.c, words: packC(C, cmd.prec), prec: cmd.prec, dims: `${cmd.m}×${cmd.n}` };
+      if (engine !== 'model') break;
+      mem.C = { addr: cmd.c, words: packC(gemm(opA(cmd), opB(cmd), cmd.prec), cmd.prec), prec: cmd.prec, dims: `${cmd.m}×${cmd.n}` };
       done = true; queue.shift();
       log(`GEMM complete: C written to ${hex(cmd.c, 4)} → <b class="ok">DONE=1</b> (latched)`, 'ok');
       render();
@@ -239,10 +270,9 @@ void run_gemm_raw(void) {
   }
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  $('start').addEventListener('click', () => {
+  function modelStart() {
     const c = current();
-    for (const [nm, v] of [['DIM_M', c.m], ['DIM_N', c.n], ['DIM_K', c.k], ['A_BASE', c.a], ['B_BASE', c.b], ['C_BASE', c.c], ['PREC', c.prec]] as const)
-      if (regs[nm] !== v) log(`write ${nm} = ${Number.isNaN(v) ? '?' : nm.endsWith('BASE') ? hex(v, 4) : v}`);
+    for (const [nm, , f] of PROG) if (regs[nm] !== f(c)) log(`write ${nm} = ${showVal(nm, f(c))}`);
     writeRegs(c);
     if (queue.length >= NPU.QUEUE_DEPTH) {
       log(`write CTRL.START → <b class="e">dropped</b>: queue full (the 1-cycle pulse is not deferred)`, 'e');
@@ -252,10 +282,160 @@ void run_gemm_raw(void) {
     queue.push(c);
     log(`write CTRL.START → snapshot queued (${queue.length}/${NPU.QUEUE_DEPTH}); DONE and ERROR cleared`);
     render(); pump();
-  });
+  }
+
+  // ---- engine 2: c930_npu_top itself, Verilated to WebAssembly (kubeworkz/grx930 c930/sim/web) ----
+  type Rtl = { pins(): number; reset(): void; w(a: number, v: number): number; r(a: number): number; mw(a: number, v: number): void; mr(a: number): number; step(n: number): number; cycles(): number };
+  let rtl: Rtl | null = null;
+  let rtlLoad: Promise<Rtl> | null = null;
+  function loadRtl(): Promise<Rtl> {
+    rtlLoad ??= (async () => {
+      await new Promise<void>((res, rej) => {
+        const s = document.createElement('script'); s.src = '/npu-web/npu_web.js';
+        s.onload = () => res(); s.onerror = () => rej(new Error('npu_web.js did not load'));
+        document.head.append(s);
+      });
+      const M = await (window as any).NpuWeb({ locateFile: (f: string) => '/npu-web/' + f });
+      const fn = (n: string, r: string | null, a: string[]) => M.cwrap(n, r, a);
+      const reset = fn('npu_web_reset', null, []), w = fn('npu_web_csr_write', 'number', ['number', 'number']);
+      const r = fn('npu_web_csr_read', 'number', ['number']), mw = fn('npu_web_mem_write32', null, ['number', 'number']);
+      const mr = fn('npu_web_mem_read32', 'number', ['number']), step = fn('npu_web_step', 'number', ['number']);
+      const cyc = fn('npu_web_cycles', 'number', []), pins = fn('npu_web_pins', 'number', []);
+      return {
+        pins, reset, w, step, mw: (a: number, v: number) => mw(a, v | 0),
+        r: (a: number) => r(a) >>> 0, mr: (a: number) => mr(a) >>> 0,
+        cycles: () => Number(cyc()) >>> 0, // a uint64 the JS side sees as its low 32 bits; plenty for a session
+      };
+    })();
+    return rtlLoad;
+  }
+
+  let last: Cmd | null = null;          // the last command START accepted: its C is checked when the NPU goes idle
+  let lastStart = 0, raf = 0, prevSt = 0, prevQ = 0;
+  let wedged = false;                   // a refused START has left the dispatcher waiting (see finish)
+  const LIVE = [0x04, 0x24, 0x28, 0x2c, 0x30, 0x34, 0x38];
+  function readRegs(offs: number[]) {
+    for (const r of REGS) {
+      if (!offs.includes(r.off)) continue;
+      const v = rtl!.r(r.off);
+      if (regs[r.name] !== undefined && regs[r.name] !== v) changed.add(r.name);
+      regs[r.name] = v;
+    }
+  }
+  // QUEUE_STAT as c930_npu_csr.sv builds it: {fifo_full, fifo_count[$clog2(DEPTH):0]}. At depth 8 that is the
+  // documented [3:0] count and bit 4 full; at the SoC's depth 4 the count is [2:0] and full is bit 3.
+  const qBits = () => Math.ceil(Math.log2(regs.QUEUE_MAX || NPU.QUEUE_DEPTH)) + 1;
+  const qOcc = (v: number) => v & ((1 << qBits()) - 1);
+  const qFull = (v: number) => (v >>> qBits()) & 1;
+  const allOffs = () => REGS.filter((r) => r.acc !== 'W').map((r) => r.off);
+  const words = (addr: number, n: number) => Array.from({ length: n }, (_, i) => rtl!.mr(addr + 4 * i));
+
+  function rtlStart() {
+    if (!rtl) return;
+    const c = current();
+    for (const [nm, v] of [['A_BASE', c.a], ['B_BASE', c.b], ['C_BASE', c.c]] as const)
+      if (Number.isNaN(v)) { log(`${nm} isn't a number: nothing written`, 'e'); return; }
+    // A and B go straight into the DDR stand-in, as a loader would put them there before the run.
+    const wa = pack(opA(c), c.prec), wb = pack(opB(c), c.prec);
+    wa.forEach((v, i) => rtl!.mw(c.a + 4 * i, v)); wb.forEach((v, i) => rtl!.mw(c.b + 4 * i, v));
+    mem.A = { addr: c.a, words: words(c.a, wa.length), prec: c.prec, dims: `${c.m}×${c.k}` };
+    mem.B = { addr: c.b, words: words(c.b, wb.length), prec: c.prec, dims: `${c.k}×${c.n}` };
+    log(`${at()}A (${wa.length} words) at ${hex(c.a, 4)} and B (${wb.length}) at ${hex(c.b, 4)} placed in DDR`);
+    const q0 = rtl.r(0x38);
+    for (const [nm, off, f] of PROG) {
+      const v = f(c);
+      if (regs[nm] === v) continue;
+      const t = rtl.w(off, v);
+      log(`${at()}write ${nm} = ${showVal(nm, v)}${t < 0 ? ' → <b class="e">no response</b>' : ` (${t} cycles on the bus)`}`, t < 0 ? 'e' : '');
+    }
+    rtl.w(0x00, 1);
+    const q1 = rtl.r(0x38);
+    readRegs(allOffs());
+    if (qFull(q0)) {
+      log(`${at()}write CTRL.START with the queue full (QUEUE_STAT ${hex(q0, 2)}) → <b class="e">dropped</b> by the RTL`, 'e');
+      if (qBits() !== 4) log(`${at()}note: at depth ${regs.QUEUE_MAX} the RTL puts full at bit ${qBits()} and the count in [${qBits() - 1}:0]; the driver header says bit 4 and [3:0], so npu_drv_submit's full check (& 0x10) misses this and the START is lost silently`, 'e');
+    }
+    else {
+      last = c; lastStart = rtl.cycles(); mem.C = null; $('verdict').textContent = '';
+      log(`${at()}write CTRL.START → QUEUE_STAT ${hex(q0, 2)} → ${hex(q1, 2)}, STATUS ${hex(regs.STATUS, 2)}`);
+    }
+    render(); go();
+  }
+  function go() { if (!raf) raf = requestAnimationFrame(frame); }
+  function frame() {
+    raf = 0;
+    if (engine !== 'rtl' || !rtl) return;
+    // Clock up to a frame's worth, stopping early when BUSY, DONE or ERROR changes so the log's cycle stamps are close.
+    const budget = Number(($('speed') as HTMLSelectElement).value), p0 = rtl.pins() & 7;
+    for (let n = 0; n < budget; n += 4) { rtl.step(Math.min(4, budget - n)); if ((rtl.pins() & 7) !== p0) break; }
+    readRegs(LIVE);
+    const st = regs.STATUS, q = qOcc(regs.QUEUE_STAT);
+    if ((st & 1) !== (prevSt & 1)) log(`${at()}${st & 1 ? '<b>BUSY=1</b>' : '<b>BUSY=0</b>'}${st & 1 ? '' : q ? `, ${q} still queued` : ''}`);
+    if ((st & 2) && !(prevSt & 2)) log(`${at()}<b class="ok">DONE=1</b> (latched) · CYCLE_LO ${regs.CYCLE_LO}, OP_COUNT ${regs.OP_COUNT}, STALL_CT ${regs.STALL_CT}`, 'ok');
+    if ((st & 4) && !(prevSt & 4)) log(`${at()}<b class="e">ERROR=1</b>: the DMA refused the command`, 'e');
+    if (q !== prevQ) log(`${at()}queue ${prevQ} → ${q}${q < prevQ ? ': dispatched' : ''}`);
+    prevSt = st; prevQ = q;
+    const idle = !(st & 1) && q === 0;
+    if (idle) finish(st);
+    else if (rtl.cycles() - lastStart > 400000) log(`${at()}still busy after 400k cycles: stopped watching`, 'e');
+    else go();
+    render();
+  }
+  function finish(st: number) {
+    if (!last) return;
+    const c = last, v = $('verdict');
+    last = null;
+    if (st & 4) {
+      v.className = 'verdict mono bad';
+      if (!dimsOk(c.m, c.n, c.k)) {
+        wedged = true;
+        v.textContent = `ERROR: the DMA refused ${c.m}×${c.n}×${c.k}, so no C was written.`;
+      } else if (wedged) {
+        v.textContent = 'START lost. After the refused command, the RTL’s dispatcher (c930_npu_csr.sv, D_WAIT) is still waiting for the DMA to go busy, which it never will, so it takes no new command until Reset. The driver avoids this by checking the dimensions before it writes START.';
+        log(`${at()}START lost: the dispatcher is still in D_WAIT from the refused command; press Reset`, 'e');
+      } else v.textContent = `ERROR with ${c.m}×${c.n}×${c.k}: no C written.`;
+      return;
+    }
+    const got = words(c.c, c.m * c.n);
+    mem.C = { addr: c.c, words: got, prec: c.prec, dims: `${c.m}×${c.n}` };
+    const want = packC(gemm(opA(c), opB(c), c.prec), c.prec);
+    const miss = got.filter((w, i) => w !== want[i]).length;
+    if (miss === 0) { v.className = 'verdict mono ok'; v.textContent = `✓ All ${got.length} words of C match the reference GEMM computed in this page (${c.m}×${c.n}×${c.k} ${PREC[c.prec].name}; CYCLE_LO ${regs.CYCLE_LO}, about ${rtl!.cycles() - lastStart} cycles from START to idle).`; }
+    else { v.className = 'verdict mono bad'; v.textContent = `✗ ${miss} of ${got.length} words of C differ from the reference GEMM computed in this page.`; }
+    log(`${at()}C read back from ${hex(c.c, 4)}: ${miss === 0 ? '<b class="ok">matches the reference</b>' : `<b class="e">${miss} words differ</b>`}`, miss ? 'e' : 'ok');
+  }
+
+  // ---- shared controls ----
+  function resetAll() {
+    if (raf) cancelAnimationFrame(raf); raf = 0;
+    busy = done = error = false; queue = []; mem = { A: null, B: null, C: null }; last = null; prevSt = prevQ = 0; wedged = false;
+    for (const k in regs) delete regs[k];
+    $('log').innerHTML = ''; $('verdict').textContent = '';
+    if (engine === 'rtl' && rtl) { rtl.reset(); readRegs(allOffs()); changed = new Set(); log(`${at()}reset: the RTL held in reset 8 cycles; registers read back`); }
+    else log('reset: registers at reset');
+    render();
+  }
+  async function setEngine(e: 'rtl' | 'model') {
+    engine = e;
+    document.querySelectorAll('[data-eng]').forEach((x) => x.setAttribute('aria-checked', String((x as HTMLElement).dataset.eng === e)));
+    $('lblRtl').hidden = e !== 'rtl'; $('lblModel').hidden = e !== 'model';
+    document.querySelectorAll<HTMLElement>('.rtl-only, #cycWrap').forEach((x) => (x.hidden = e !== 'rtl'));
+    const start = $('start') as HTMLButtonElement;
+    if (e === 'rtl' && !rtl) {
+      start.disabled = true; resetAll(); log('loading the RTL…');
+      try { rtl = await loadRtl(); }
+      catch (err) { log(`the RTL didn't load (${esc(String((err as Error).message ?? err))}): using the model`, 'e'); start.disabled = false; ($('engine').querySelector('[data-eng="rtl"]') as HTMLButtonElement).disabled = true; return setEngine('model'); }
+      start.disabled = false;
+      if (engine !== 'rtl') return;
+    }
+    resetAll();
+  }
+
+  $('start').addEventListener('click', () => (engine === 'rtl' ? rtlStart() : modelStart()));
   $('reroll').addEventListener('click', () => { seed = (seed * 1103515245 + 12345) >>> 0; log('new A and B data'); render(); });
-  $('reset').addEventListener('click', () => { busy = done = error = false; queue = []; mem = { A: null, B: null, C: null }; for (const k in regs) delete regs[k]; $('log').innerHTML = ''; log('reset'); render(); });
+  $('reset').addEventListener('click', resetAll);
   for (const id of ['npu', 'm', 'n', 'k', 'prec', 'a', 'b', 'c']) $(id).addEventListener('input', render);
+  document.querySelectorAll<HTMLButtonElement>('[data-eng]').forEach((b) => b.addEventListener('click', () => { if (b.dataset.eng !== engine) setEngine(b.dataset.eng as 'rtl' | 'model'); }));
   document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) => b.addEventListener('click', () => {
     tab = b.dataset.tab as 'drv' | 'raw';
     document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
@@ -265,13 +445,27 @@ void run_gemm_raw(void) {
     try { await navigator.clipboard.writeText($('codeOut').textContent || ''); $('copy').textContent = 'Copied ✓'; } catch { $('copy').textContent = 'Select & copy'; }
     setTimeout(() => ($('copy').textContent = 'Copy'), 1600);
   });
-  log('ready: registers at reset');
-  render();
+  setEngine(engine);
 </script>
 
 <style>
   .model { font-size: .78rem; margin: 0 0 20px; line-height: 1.6; }
   .model code { color: var(--gw-white); }
+  .engine { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; font-size: .74rem; margin: 0 0 12px; color: var(--gw-steel); }
+  .engine .lab { letter-spacing: .08em; text-transform: uppercase; font-size: .66rem; }
+  .seg { display: inline-flex; border: 1px solid var(--gw-line-strong); border-radius: 4px; overflow: hidden; }
+  .seg button { font: inherit; color: var(--gw-steel); background: transparent; border: 0; padding: 5px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--gw-line-strong); }
+  .seg button[aria-checked='true'] { color: var(--gw-bg); background: var(--gw-teal); }
+  .seg button:disabled { opacity: .45; cursor: not-allowed; }
+  .cyc { margin-left: auto; }
+  .cyc b { color: var(--gw-white); font-weight: 500; }
+  [hidden] { display: none !important; }
+  .verdict { font-size: .78rem; margin: -6px 0 14px; }
+  .verdict:empty { display: none; }
+  .verdict.ok { color: var(--gw-green); }
+  .verdict.bad { color: #ff5c7a; }
+  .st-live { color: var(--gw-green); border-color: #39ff1455; }
   .st { display: inline-block; font: 500 .62rem/1 var(--gw-font-mono); letter-spacing: .05em; text-transform: uppercase; padding: 4px 7px; border-radius: 3px; border: 1px solid #b9a3ff66; color: #b9a3ff; margin-right: 6px; }
   .pg { display: grid; gap: 16px; grid-template-columns: 1fr; margin-bottom: 16px; }
   @media (min-width: 980px) { .pg { grid-template-columns: 1fr 1fr; } }
@@ -314,6 +508,7 @@ void run_gemm_raw(void) {
   .log :global(li:first-child) { color: var(--gw-white); }
   .log :global(b.e), .log :global(li.e b) { color: #ff5c7a; font-weight: 500; }
   .log :global(b.ok) { color: var(--gw-green); font-weight: 500; }
+  .log :global(.t) { color: #5c6678; }
   .mem { margin-bottom: 16px; }
   .memgrid { display: grid; gap: 16px; grid-template-columns: 1fr; }
   @media (min-width: 760px) { .memgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
